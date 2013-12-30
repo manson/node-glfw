@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 GLEW_VERSION=1.10.0
-GLFW_VERSION=2.7.9
+GLFW_VERSION=3.0.4
 
 cd "$(dirname $0)"
 rm -rf deps

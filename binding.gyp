@@ -12,7 +12,7 @@
       #'target_name': 'glfw-<(platform)-<(target_arch)',
       'target_name': 'glfw',
       'defines': [
-        'VERSION=0.1.2'
+        'VERSION=0.2.0'
       ],
       'sources': [
         'src/glfw.cc',
@@ -20,32 +20,28 @@
       ],
       'include_dirs': [
         './deps/glew-1.10.0/include',
-        './deps/glfw-2.7.9/include',
+        './deps/glfw-3.0.4/include',
       ],
       'conditions': [
         ['OS=="linux"', {
           'libraries': [
-            '../deps/glfw-2.7.9/lib/x11/libglfw.so',
+            '../deps/glfw-3.0.4/src/libglfw.so',
           ],
           'ldflags': [
-            '-Wl,-rpath,\$$ORIGIN/../../deps/glfw-2.7.9/lib/x11',
+            '-Wl,-rpath,\$$ORIGIN/../../deps/glfw-3.0.4/src',
           ]
         }],
         ['OS=="mac"', {
           'libraries': [
-            '../deps/glfw-2.7.9/lib/carbon/libglfw.so',
+            '../deps/glfw-3.0.4/src/libglfw.so',
             '-framework OpenGL',
           ],
           'ldflags': [
-            '-Wl,-rpath,@loader_path/../../deps/glfw-2.7.9/lib/carbon',
+            '-Wl,-rpath,@loader_path/../../deps/glfw-3.0.4/src',
           ]
         }],
         ['OS=="win"', {
-          'library_dirs': [
-            './deps/glfw-2.7.9/lib/win32',
-          ],
           'libraries': [
-            'glfw.lib',
             'opengl32.lib',
           ],
           'defines' : [
