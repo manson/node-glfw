@@ -19,13 +19,13 @@
         'deps/glew-1.10.0/src/glew.c',
       ],
       'include_dirs': [
-        './deps/glew-1.10.0/include',
-        './deps/glfw-3.0.4/include',
+        '<(module_root_dir)/deps/glew-1.10.0/include',
+        '<(module_root_dir)/deps/glfw-3.0.4/include',
       ],
       'conditions': [
         ['OS=="linux"', {
           'libraries': [
-            '../deps/glfw-3.0.4/src/libglfw.so',
+            '<(module_root_dir)/deps/glfw-3.0.4/src/libglfw.so',
           ],
           'ldflags': [
             '-Wl,-rpath,\$$ORIGIN/../../deps/glfw-3.0.4/src',
@@ -33,7 +33,7 @@
         }],
         ['OS=="mac"', {
           'libraries': [
-            '../deps/glfw-3.0.4/src/libglfw.so',
+            '<(module_root_dir)/deps/glfw-3.0.4/src/libglfw.so',
             '-framework OpenGL',
           ],
           'ldflags': [
