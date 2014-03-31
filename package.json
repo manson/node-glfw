@@ -1,8 +1,9 @@
 {
    "name": "node-glfw-2",
-   "version": "0.2.1",
+   "version": "0.2.2",
    "description": "A NodeJS wrapper around GLFW",
    "main": "index.js",
+   "author": "Mikael Bourges-Sevenier <mikeseven@gmail.com>",
    "contributors": [
        "Magnus Hoff <maghoff@gmail.com>",
        {
