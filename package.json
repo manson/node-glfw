@@ -10,13 +10,13 @@
            "email": "mikeseven@gmail.com",
            "twitter": "msevenier"
        }
-   ]
+   ],
    "keywords": [ "glfw", "opengl", "3d", "graphics" ],
    "maintainers": "Magnus Hoff <maghoff@gmail.com>",
    "licenses": [{
         "type": "BSD",
         "url": "http://github.com/maghoff/node-glfw/raw/master/LICENSES"
-    }],
+   }],
    "repository": {
        "type": "git",
        "url": "http://github.com/maghoff/node-glfw"
