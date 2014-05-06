@@ -28,7 +28,7 @@
             '../deps/glfw-2.7.9/lib/x11/libglfw.so',
           ],
           'ldflags': [
-            '-Wl,-rpath=./deps/glfw-2.7.9/lib/x11',
+            '-Wl,-rpath,\$$ORIGIN/../../deps/glfw-2.7.9/lib/x11',
           ]
         }],
         ['OS=="mac"', {
@@ -37,7 +37,7 @@
             '-framework OpenGL',
           ],
           'ldflags': [
-            '-Wl,-rpath=./deps/glfw-2.7.9/lib/carbon',
+            '-Wl,-rpath,@loader_path/../../deps/glfw-2.7.9/lib/carbon',
           ]
         }],
         ['OS=="win"', {
