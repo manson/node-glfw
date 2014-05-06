@@ -20,11 +20,6 @@
        "type": "git",
        "url": "http://github.com/mikeseven/node-glfw"
    },
-   "directories": {
-       "src": "src",
-       "lib": "lib",
-       "test": "test"
-   },
    "engines": {
        "node": "0.6.5-0.11.3"
    },
