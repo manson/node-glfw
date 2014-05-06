@@ -24,20 +24,20 @@
       ],
       'conditions': [
         ['OS=="linux"', {
-          'library_dirs': [
-            './deps/glfw-2.7.9/lib/x11',
-          ],
           'libraries': [
-            '-lglfw',
+            '../deps/glfw-2.7.9/lib/x11/libglfw.so',
+          ],
+          'ldflags': [
+            '-Wl,-rpath=./deps/glfw-2.7.9/lib/x11',
           ]
         }],
         ['OS=="mac"', {
-          'library_dirs': [
-            './deps/glfw-2.7.9/lib/carbon',
-          ],
           'libraries': [
-            '-lglfw',
+            '../deps/glfw-2.7.9/lib/carbon/libglfw.so',
             '-framework OpenGL',
+          ],
+          'ldflags': [
+            '-Wl,-rpath=./deps/glfw-2.7.9/lib/carbon',
           ]
         }],
         ['OS=="win"', {
