@@ -15,17 +15,39 @@
         'VERSION=0.1.2'
       ],
       'sources': [
-        'src/glfw.cc'
+        'src/glfw.cc',
+        'deps/glew-1.10.0/src/glew.c',
+      ],
+      'include_dirs': [
+        './deps/glew-1.10.0/include',
+        './deps/glfw-2.7.9/include',
       ],
       'conditions': [
-        ['OS=="linux"', {'libraries': ['-lglfw', '-lGLEW']}],
-        ['OS=="mac"', {'libraries': ['-lglfw', '-lGLEW', '-framework OpenGL']}],
-        ['OS=="win"', {
+        ['OS=="linux"', {
+          'library_dirs': [
+            './deps/glfw-2.7.9/lib/x11',
+          ],
           'libraries': [
-            'glew64s.lib', 
-            'glfw64dll.lib', 
-            'opengl32.lib'
-            ],
+            '-lglfw',
+          ]
+        }],
+        ['OS=="mac"', {
+          'library_dirs': [
+            './deps/glfw-2.7.9/lib/carbon',
+          ],
+          'libraries': [
+            '-lglfw',
+            '-framework OpenGL',
+          ]
+        }],
+        ['OS=="win"', {
+          'library_dirs': [
+            './deps/glfw-2.7.9/lib/win32',
+          ],
+          'libraries': [
+            'glfw.lib',
+            'opengl32.lib',
+          ],
           'defines' : [
             'WIN32_LEAN_AND_MEAN',
             'VC_EXTRALEAN'

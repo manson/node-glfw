@@ -1,31 +1,32 @@
 {
-   "name": "node-glfw",
-   "version": "0.1.3",
+   "name": "node-glfw-2",
+   "version": "0.1.4",
    "description": "A NodeJS wrapper around GLFW library",
    "main": "index.js",
-   "author": "Mikael Bourges-Sevenier <mikeseven@gmail.com>",
-   "keywords": [ "glfw", "opengl", "3d", "graphics" ],
-   "maintainers": [
+   "contributors": [
+       "Magnus Hoff <maghoff@gmail.com>",
        {
            "name": "Mikael Bourges-Sevenier",
            "email": "mikeseven@gmail.com",
            "twitter": "msevenier"
        }
-   ],
+   ]
+   "keywords": [ "glfw", "opengl", "3d", "graphics" ],
+   "maintainers": "Magnus Hoff <maghoff@gmail.com>",
    "licenses": [{
         "type": "BSD",
-        "url": "http://github.com/mikeseven/node-glfw/raw/master/LICENSES"
+        "url": "http://github.com/maghoff/node-glfw/raw/master/LICENSES"
     }],
    "repository": {
        "type": "git",
-       "url": "http://github.com/mikeseven/node-glfw"
+       "url": "http://github.com/maghoff/node-glfw"
    },
    "engines": {
        "node": "0.6.5-0.11.3"
    },
    "scripts": {
-       "install": "node-gyp rebuild"
+       "prepublish": "./prepublish.sh",
+       "install": "./build.sh"
    },
   "dependencies": { }
 }
-
