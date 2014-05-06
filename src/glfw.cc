@@ -1,7 +1,4 @@
 #include "common.h"
-#include "atb.h"
-
-// Includes
 #include <cstdio>
 #include <cstdlib>
 
@@ -42,153 +39,6 @@ Persistent<Object> glfw_events;
 int lastX=0,lastY=0;
 bool windowCreated=false;
 
-void APIENTRY keyCB(int key, int action) {
-  if(!TwEventKeyGLFW(key,action)) {
-    HandleScope scope;
-
-    Local<Array> evt=Array::New(7);
-    evt->Set(JS_STR("type"),JS_STR(action ? "keydown" : "keyup"));
-    evt->Set(JS_STR("ctrlKey"),JS_BOOL(glfwGetKey(GLFW_KEY_LCTRL) || glfwGetKey(GLFW_KEY_RCTRL)));
-    evt->Set(JS_STR("shiftKey"),JS_BOOL(glfwGetKey(GLFW_KEY_LSHIFT) || glfwGetKey(GLFW_KEY_RSHIFT)));
-    evt->Set(JS_STR("altKey"),JS_BOOL(glfwGetKey(GLFW_KEY_LALT) || glfwGetKey(GLFW_KEY_RALT)));
-    evt->Set(JS_STR("metaKey"),JS_BOOL(glfwGetKey(GLFW_KEY_LSUPER) || glfwGetKey(GLFW_KEY_RSUPER)));
-
-    if(key==GLFW_KEY_ESC) key=27;
-    else if(key==GLFW_KEY_LSHIFT || key==GLFW_KEY_RSHIFT) key=16;
-    else if(key==GLFW_KEY_LCTRL || key==GLFW_KEY_RCTRL) key=17;
-    else if(key==GLFW_KEY_LALT || key==GLFW_KEY_RALT) key=18;
-    else if(key==GLFW_KEY_LSUPER) key=91;
-    else if(key==GLFW_KEY_RSUPER) key=93;
-    evt->Set(JS_STR("which"),JS_INT(key));
-    evt->Set(JS_STR("keyCode"),JS_INT(key));
-    evt->Set(JS_STR("charCode"),JS_INT(key));
-
-    Handle<Value> argv[2] = {
-      JS_STR(action ? "keydown" : "keyup"), // event name
-      evt
-    };
-
-    MakeCallback(glfw_events, "emit", 2, argv);
-  }
-}
-
-void APIENTRY mousePosCB(int x, int y) {
-  if(!TwEventMousePosGLFW(x,y)) {
-    int w,h;
-    glfwGetWindowSize(&w, &h);
-    if(x<0 || x>=w) return;
-    if(y<0 || y>=h) return;
-
-    lastX=x;
-    lastY=y;
-
-    HandleScope scope;
-
-    Local<Array> evt=Array::New(5);
-    evt->Set(JS_STR("type"),JS_STR("mousemove"));
-    evt->Set(JS_STR("pageX"),JS_INT(x));
-    evt->Set(JS_STR("pageY"),JS_INT(y));
-    evt->Set(JS_STR("x"),JS_INT(x));
-    evt->Set(JS_STR("y"),JS_INT(y));
-
-    Handle<Value> argv[2] = {
-      JS_STR("mousemove"), // event name
-      evt
-    };
-
-    MakeCallback(glfw_events, "emit", 2, argv);
-  }
-}
-
-void APIENTRY windowSizeCB(int w, int h) {
-  HandleScope scope;
-  //cout<<"resizeCB: "<<w<<" "<<h<<endl;
-
-  Local<Array> evt=Array::New(3);
-  evt->Set(JS_STR("type"),JS_STR("resize"));
-  evt->Set(JS_STR("width"),JS_INT(w));
-  evt->Set(JS_STR("height"),JS_INT(h));
-
-  Handle<Value> argv[2] = {
-    JS_STR("resize"), // event name
-    evt
-  };
-
-  MakeCallback(glfw_events, "emit", 2, argv);
-}
-
-void APIENTRY mouseButtonCB(int button, int action) {
-  if(!TwEventMouseButtonGLFW(button,action)) {
-    HandleScope scope;
-    Local<Array> evt=Array::New(7);
-    evt->Set(JS_STR("type"),JS_STR(action ? "mousedown" : "mouseup"));
-    evt->Set(JS_STR("button"),JS_INT(button));
-    evt->Set(JS_STR("which"),JS_INT(button));
-    evt->Set(JS_STR("x"),JS_INT(lastX));
-    evt->Set(JS_STR("y"),JS_INT(lastY));
-    evt->Set(JS_STR("pageX"),JS_INT(lastX));
-    evt->Set(JS_STR("pageY"),JS_INT(lastY));
-
-    Handle<Value> argv[2] = {
-      JS_STR(action ? "mousedown" : "mouseup"), // event name
-      evt
-    };
-
-    MakeCallback(glfw_events, "emit", 2, argv);
-  }
-}
-
-void APIENTRY mouseWheelCB(int pos) {
-  if(!TwEventMouseWheelGLFW(pos)) {
-    HandleScope scope;
-
-    Local<Array> evt=Array::New(2);
-    evt->Set(JS_STR("type"),JS_STR("mousewheel"));
-    evt->Set(JS_STR("wheelDelta"),JS_INT(pos));
-
-    Handle<Value> argv[2] = {
-      JS_STR("mousewheel"), // event name
-      evt
-    };
-
-    MakeCallback(glfw_events, "emit", 2, argv);
-  }
-}
-
-void APIENTRY windowRefreshCB() {
-  #ifdef LOGGING
-  cout<<"windowRefreshCB"<<endl;
-  #endif
-}
-
-int APIENTRY windowCloseCB() {
-  HandleScope scope;
-
-  Handle<Value> argv[1] = {
-    JS_STR("quit"), // event name
-  };
-
-  MakeCallback(glfw_events, "emit", 1, argv);
-
-  return 1;
-}
-
-void testScene(int width, int height) {
-  glViewport( 0, 0, width, height );
-
-  glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
-  glClear( GL_COLOR_BUFFER_BIT );
-  
-  glPushMatrix();
-  //glRotatef( 0, 0.0f, 0.0f, 1.0f );
-  glBegin( GL_TRIANGLES );
-    glColor3f( 1.0f, 0.0f, 0.0f ); glVertex2f( 0.0f, 1.0f );
-    glColor3f( 0.0f, 1.0f, 0.0f ); glVertex2f( 0.87f, -0.5f );
-    glColor3f( 0.0f, 0.0f, 1.0f ); glVertex2f( -0.87f, -0.5f );
-  glEnd();
-  glPopMatrix();
-}
-
 JS_METHOD(OpenWindow) {
   HandleScope scope;
   int width       = args[0]->Uint32Value();
@@ -202,10 +52,6 @@ JS_METHOD(OpenWindow) {
   int mode        = args[8]->Uint32Value();
 
   if(!windowCreated) {
-    /*GLFWvidmode vmode;   // GLFW video mode
-    glfwGetDesktopMode(&vmode);
-    windowCreated=glfwOpenWindow(width,height, vmode.RedBits, vmode.GreenBits, vmode.BlueBits,
-        alphabits,depthbits,stencilbits, mode);*/
     windowCreated=glfwOpenWindow(width,height,redbits,greenbits,bluebits,alphabits,depthbits,stencilbits,mode)!=0;
 
     GLenum err = glewInit();
@@ -218,25 +64,6 @@ JS_METHOD(OpenWindow) {
   }
   else
     glfwSetWindowSize(width,height);
-
-  // Set callback functions
-  glfw_events=Persistent<Object>::New(args.This()->Get(JS_STR("events"))->ToObject());
-
-  glfwSetWindowSizeCallback( (GLFWwindowsizefun) windowSizeCB );
-  glfwSetWindowRefreshCallback( (GLFWwindowrefreshfun) windowRefreshCB );
-  glfwSetWindowCloseCallback( (GLFWwindowclosefun) windowCloseCB );
-  glfwSetMousePosCallback( (GLFWmouseposfun) mousePosCB );
-  glfwSetMouseButtonCallback( (GLFWmousebuttonfun) mouseButtonCB );
-  glfwSetMouseWheelCallback( (GLFWmousewheelfun) mouseWheelCB );
-  glfwSetKeyCallback( (GLFWkeyfun)keyCB);
-
-  //glfwSetMouseButtonCallback((GLFWmousebuttonfun)TwEventMouseButtonGLFW);
-  //glfwSetMousePosCallback((GLFWmouseposfun)TwEventMousePosGLFW);
-  //glfwSetMouseWheelCallback((GLFWmousewheelfun)TwEventMouseWheelGLFW);
-  //glfwSetKeyCallback((GLFWkeyfun)TwEventKeyGLFW);
-  glfwSetCharCallback((GLFWcharfun)TwEventCharGLFW);
-
-  //testScene(width,height);
 
   return scope.Close(JS_BOOL(windowCreated));
 }
@@ -310,9 +137,6 @@ JS_METHOD(GetWindowParam) {
   HandleScope scope;
   return scope.Close(JS_INT(glfwGetWindowParam(args[0]->Int32Value())));
 }
-//GLFWAPI void GLFWAPIENTRY glfwSetWindowSizeCallback( GLFWwindowsizefun cbfun );
-//GLFWAPI void GLFWAPIENTRY glfwSetWindowCloseCallback( GLFWwindowclosefun cbfun );
-//GLFWAPI void GLFWAPIENTRY glfwSetWindowRefreshCallback( GLFWwindowrefreshfun cbfun );
 
 /* Input handling */
 JS_METHOD(PollEvents) {
@@ -363,11 +187,6 @@ JS_METHOD(SetMouseWheel) {
   glfwSetMouseWheel(args[0]->Int32Value());
   return scope.Close(Undefined());
 }
-//GLFWAPI void GLFWAPIENTRY glfwSetKeyCallback( GLFWkeyfun cbfun );
-//GLFWAPI void GLFWAPIENTRY glfwSetCharCallback( GLFWcharfun cbfun );
-//GLFWAPI void GLFWAPIENTRY glfwSetMouseButtonCallback( GLFWmousebuttonfun cbfun );
-//GLFWAPI void GLFWAPIENTRY glfwSetMousePosCallback( GLFWmouseposfun cbfun );
-//GLFWAPI void GLFWAPIENTRY glfwSetMouseWheelCallback( GLFWmousewheelfun cbfun );
 
 /* Time */
 JS_METHOD(GetTime) {
@@ -421,7 +240,6 @@ JS_METHOD(Disable) {
 
 // make sure we close everything when we exit
 void AtExit() {
-  TwTerminate();
   glfwTerminate();
 }
 
@@ -683,10 +501,6 @@ void init(Handle<Object> target) {
 
   /* Time spans longer than this (seconds) are considered to be infinity */
   JS_GLFW_CONSTANT(INFINITY);
-
-  // init AntTweakBar
-  atb::AntTweakBar::Initialize(target);
-  atb::Bar::Initialize(target);
 }
 
 NODE_MODULE(glfw, init)

@@ -23,8 +23,6 @@ Installation (Mac, Linux)
 -------------------------
 Install GLFW and make sure examples are working. For convenience, install GLFW into your system lib/include path.
 
-Install AntTweakBar and make sure its GLFW samples are working. For convenience, install AntTweakBar libraries in your system lib path.
-
 Install GLEW and make sure its tests programs are working such as visualinfo. You should install GLEW in your system lib/include path.
 
 Now you can install node-glfw, the usual way: npm install node-glfw.
@@ -37,5 +35,3 @@ Copy all deps/*.dll into <Windows>/System32.
 Notes
 -----
 - node-glfw is a just a platform binding so don't expect samples here. You should install node-webgl, which contains lots of tests and examples using node-glfw features including AntTweakBar. See node-webgl/test/cube.js for an example of using AntTweakBar with your webgl code.
-
-
