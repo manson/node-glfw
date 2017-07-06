@@ -12,46 +12,48 @@ namespace glfw {
 
 /* @Module: initialization and version information */
 
+#define SET_RETURN_VALUE(x) info.GetReturnValue().Set(x);
+
 JS_METHOD(Init) {
-  HandleScope scope;
-  return scope.Close(JS_BOOL(glfwInit()==GL_TRUE));
+  Nan::EscapableHandleScope scope;
+  SET_RETURN_VALUE(scope.Escape(JS_BOOL(glfwInit()==GL_TRUE)));
 }
 
 JS_METHOD(Terminate) {
-  HandleScope scope;
+  Nan::EscapableHandleScope scope;
   glfwTerminate();
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(GetVersion) {
-  HandleScope scope;
+  Nan::EscapableHandleScope scope;
   int major, minor, rev;
   glfwGetVersion(&major,&minor,&rev);
-  Local<Array> arr=Array::New(3);
+  Local<Array> arr=Array::New(v8::Isolate::GetCurrent(), 3);
   arr->Set(JS_STR("major"),JS_INT(major));
   arr->Set(JS_STR("minor"),JS_INT(minor));
   arr->Set(JS_STR("rev"),JS_INT(rev));
-  return scope.Close(arr);
+  SET_RETURN_VALUE(scope.Escape(arr));
 }
 
 JS_METHOD(GetVersionString) {
-  HandleScope scope;
+  Nan::EscapableHandleScope scope;
   const char* ver=glfwGetVersionString();
-  return scope.Close(JS_STR(ver));
+  SET_RETURN_VALUE(scope.Escape(JS_STR(ver)));
 }
 
 /* @Module: Time input */
 
 JS_METHOD(GetTime) {
-  HandleScope scope;
-  return scope.Close(JS_NUM(glfwGetTime()));
+  Nan::EscapableHandleScope scope;
+  SET_RETURN_VALUE(scope.Escape(JS_NUM(glfwGetTime())));
 }
 
 JS_METHOD(SetTime) {
-  HandleScope scope;
-  double time = args[0]->NumberValue();
+  Nan::EscapableHandleScope scope;
+  double time = info[0]->NumberValue();
   glfwSetTime(time);
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 /* @Module: monitor handling */
@@ -59,18 +61,18 @@ JS_METHOD(SetTime) {
 /* TODO: Monitor configuration change callback */
 
 JS_METHOD(GetMonitors) {
-  HandleScope scope;
+  Nan::EscapableHandleScope scope;
   int monitor_count, mode_count, xpos, ypos, width, height;
   int i, j;
   GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
   GLFWmonitor *primary = glfwGetPrimaryMonitor();
   const GLFWvidmode *mode, *modes;
   
-  Local<Array> js_monitors = Array::New(monitor_count);
+  Local<Array> js_monitors = Array::New(v8::Isolate::GetCurrent(), monitor_count);
   Local<Object> js_monitor, js_mode;
   Local<Array> js_modes;
   for(i=0; i<monitor_count; i++){
-    js_monitor = Object::New();
+    js_monitor = Object::New(v8::Isolate::GetCurrent());
     js_monitor->Set(JS_STR("is_primary"), JS_BOOL(monitors[i] == primary));
     js_monitor->Set(JS_STR("index"), JS_INT(i));
     
@@ -90,9 +92,9 @@ JS_METHOD(GetMonitors) {
     js_monitor->Set(JS_STR("rate"), JS_INT(mode->refreshRate));
     
     modes = glfwGetVideoModes(monitors[i], &mode_count);
-    js_modes = Array::New(mode_count);
+    js_modes = Array::New(v8::Isolate::GetCurrent(), mode_count);
     for(j=0; j<mode_count; j++){
-      js_mode = Object::New();
+      js_mode = Object::New(v8::Isolate::GetCurrent());
       js_mode->Set(JS_STR("width"), JS_INT(modes[j].width));
       js_mode->Set(JS_STR("height"), JS_INT(modes[j].height));
       js_mode->Set(JS_STR("rate"), JS_INT(modes[j].refreshRate));
@@ -104,19 +106,19 @@ JS_METHOD(GetMonitors) {
     js_monitors->Set(JS_INT(i), js_monitor);
   }
   
-  return scope.Close(js_monitors);
+  SET_RETURN_VALUE(scope.Escape(js_monitors));
 }
 
 
 /* @Module: Window handling */
-Persistent<Object> glfw_events;
+Nan::Persistent<v8::Object> glfw_events;
 int lastX=0,lastY=0;
 bool windowCreated=false;
 
 JS_METHOD(testScene) {
-  HandleScope scope;
-  int width = args[0]->Uint32Value();
-  int height = args[1]->Uint32Value();
+  Nan::EscapableHandleScope scope;
+  int width = info[0]->Uint32Value();
+  int height = info[1]->Uint32Value();
   float ratio = width / (float) height;
 
   glViewport(0, 0, width, height);
@@ -139,34 +141,34 @@ JS_METHOD(testScene) {
   glVertex3f(0.f, 0.6f, 0.f);
   glEnd();
 
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(WindowHint) {
-  HandleScope scope;
-  int target       = args[0]->Uint32Value();
-  int hint         = args[1]->Uint32Value();
+  Nan::EscapableHandleScope scope;
+  int target       = info[0]->Uint32Value();
+  int hint         = info[1]->Uint32Value();
   glfwWindowHint(target, hint);
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(DefaultWindowHints) {
-  HandleScope scope;
+  Nan::EscapableHandleScope scope;
   glfwDefaultWindowHints();
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(CreateWindow) {
-  HandleScope scope;
-  int width       = args[0]->Uint32Value();
-  int height      = args[1]->Uint32Value();
-  String::Utf8Value str(args[2]->ToString());
-  int monitor_idx = args[3]->Uint32Value();
+  Nan::EscapableHandleScope scope;
+  int width       = info[0]->Uint32Value();
+  int height      = info[1]->Uint32Value();
+  String::Utf8Value str(info[2]->ToString());
+  int monitor_idx = info[3]->Uint32Value();
   
   GLFWwindow* window = NULL;
   GLFWmonitor **monitors = NULL, *monitor = NULL;
   int monitor_count;
-  if(args.Length() >= 4 && monitor_idx >= 0){
+  if(info.Length() >= 4 && monitor_idx >= 0){
     monitors = glfwGetMonitors(&monitor_count);
     if(monitor_idx >= monitor_count){
       return ThrowError("Invalid monitor");
@@ -200,179 +202,185 @@ JS_METHOD(CreateWindow) {
     glfwSetWindowSize(window, width,height);
 
   // Set callback functions
-  glfw_events=Persistent<Object>::New(args.This()->Get(JS_STR("events"))->ToObject());
+  glfw_events.Reset(info.This()->Get(JS_STR("events"))->ToObject());
+  // glfw_events=Persistent<Object>::New(info.This()->Get(JS_STR("events"))->ToObject());
 
-  return scope.Close(JS_NUM((uint64_t) window));
+  SET_RETURN_VALUE(scope.Escape(JS_NUM((uint64_t) window)));
 }
 
 JS_METHOD(DestroyWindow) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     glfwDestroyWindow(window);
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(SetWindowTitle) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
-  String::Utf8Value str(args[1]->ToString());
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
+  String::Utf8Value str(info[1]->ToString());
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     glfwSetWindowTitle(window, *str);
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(GetWindowSize) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     int w,h;
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     glfwGetWindowSize(window, &w, &h);
-    Local<Array> arr=Array::New(2);
+    Local<Array> arr=Array::New(v8::Isolate::GetCurrent(), 2);
     arr->Set(JS_STR("width"),JS_INT(w));
     arr->Set(JS_STR("height"),JS_INT(h));
-    return scope.Close(arr);
+    SET_RETURN_VALUE(scope.Escape(arr));
+    return;
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(SetWindowSize) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
-    glfwSetWindowSize(window, args[1]->Uint32Value(),args[2]->Uint32Value());
+    glfwSetWindowSize(window, info[1]->Uint32Value(),info[2]->Uint32Value());
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(SetWindowPos) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
-    glfwSetWindowPos(window, args[1]->Uint32Value(),args[2]->Uint32Value());
+    glfwSetWindowPos(window, info[1]->Uint32Value(),info[2]->Uint32Value());
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(GetWindowPos) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     int xpos, ypos;
     glfwGetWindowPos(window, &xpos, &ypos);
-    Local<Array> arr=Array::New(2);
+    Local<Array> arr=Array::New(v8::Isolate::GetCurrent(), 2);
     arr->Set(JS_STR("xpos"),JS_INT(xpos));
     arr->Set(JS_STR("ypos"),JS_INT(ypos));
-    return scope.Close(arr);
+    SET_RETURN_VALUE(scope.Escape(arr));
+    return;
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(GetFramebufferSize) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    Local<Array> arr=Array::New(2);
+    Local<Array> arr=Array::New(v8::Isolate::GetCurrent(), 2);
     arr->Set(JS_STR("width"),JS_INT(width));
     arr->Set(JS_STR("height"),JS_INT(height));
-    return scope.Close(arr);
+    SET_RETURN_VALUE(scope.Escape(arr));
+    return;
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(IconifyWindow) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     glfwIconifyWindow(window);
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(RestoreWindow) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     glfwRestoreWindow(window);
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(HideWindow) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     glfwHideWindow(window);
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(ShowWindow) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     glfwShowWindow(window);
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(WindowShouldClose) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
-    return scope.Close(JS_INT(glfwWindowShouldClose(window)));
+    SET_RETURN_VALUE(scope.Escape(JS_INT(glfwWindowShouldClose(window))));
+    return;
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(SetWindowShouldClose) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
-  int value=args[1]->Uint32Value();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
+  int value=info[1]->Uint32Value();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     glfwSetWindowShouldClose(window, value);
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(GetWindowAttrib) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
-  int attrib=args[1]->Uint32Value();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
+  int attrib=info[1]->Uint32Value();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
-    return scope.Close(JS_INT(glfwGetWindowAttrib(window, attrib)));
+    SET_RETURN_VALUE(scope.Escape(JS_INT(glfwGetWindowAttrib(window, attrib))));
+    return;
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(PollEvents) {
-  HandleScope scope;
+  Nan::EscapableHandleScope scope;
   glfwPollEvents();
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(WaitEvents) {
-  HandleScope scope;
+  Nan::EscapableHandleScope scope;
   glfwWaitEvents();
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 //GLFWAPI void GLFWAPIENTRY glfwSetWindowSizeCallback( GLFWwindowsizefun cbfun );
@@ -382,92 +390,95 @@ JS_METHOD(WaitEvents) {
 /* Input handling */
 
 JS_METHOD(GetKey) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
-  int key=args[1]->Uint32Value();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
+  int key=info[1]->Uint32Value();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
-    return scope.Close(JS_INT(glfwGetKey(window, key)));
+    SET_RETURN_VALUE(scope.Escape(JS_INT(glfwGetKey(window, key))));
+    return;
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(GetMouseButton) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
-  int button=args[1]->Uint32Value();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
+  int button=info[1]->Uint32Value();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
-    return scope.Close(JS_INT(glfwGetMouseButton(window, button)));
+    SET_RETURN_VALUE(scope.Escape(JS_INT(glfwGetMouseButton(window, button))));
+    return;
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(GetCursorPos) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     double x,y;
     glfwGetCursorPos(window, &x, &y);
-    Local<Array> arr=Array::New(2);
+    Local<Array> arr=Array::New(v8::Isolate::GetCurrent(), 2);
     arr->Set(JS_STR("x"),JS_INT(x));
     arr->Set(JS_STR("y"),JS_INT(y));
-    return scope.Close(arr);
+    SET_RETURN_VALUE(scope.Escape(arr));
+    return;
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(SetCursorPos) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
-  int x=args[1]->NumberValue();
-  int y=args[2]->NumberValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
+  int x=info[1]->NumberValue();
+  int y=info[2]->NumberValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     glfwSetCursorPos(window, x, y);
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 /* @Module Context handling */
 JS_METHOD(MakeContextCurrent) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     glfwMakeContextCurrent(window);
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(GetCurrentContext) {
-  HandleScope scope;
+  Nan::EscapableHandleScope scope;
   GLFWwindow* window=glfwGetCurrentContext();
-  return scope.Close(JS_NUM((uint64_t) window));
+  SET_RETURN_VALUE(scope.Escape(JS_NUM((uint64_t) window)));
 }
 
 JS_METHOD(SwapBuffers) {
-  HandleScope scope;
-  uint64_t handle=args[0]->IntegerValue();
+  Nan::EscapableHandleScope scope;
+  uint64_t handle=info[0]->IntegerValue();
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     glfwSwapBuffers(window);
   }
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(SwapInterval) {
-  HandleScope scope;
-  int interval=args[0]->Int32Value();
+  Nan::EscapableHandleScope scope;
+  int interval=info[0]->Int32Value();
   glfwSwapInterval(interval);
-  return scope.Close(Undefined());
+  SET_RETURN_VALUE(scope.Escape(Nan::Undefined()));
 }
 
 JS_METHOD(ExtensionSupported) {
-  HandleScope scope;
-  String::AsciiValue str(args[0]->ToString());
-  return scope.Close(JS_BOOL(glfwExtensionSupported(*str)==1));
+  Nan::EscapableHandleScope scope;
+  String::Utf8Value str(info[0]);
+  SET_RETURN_VALUE(scope.Escape(JS_BOOL(glfwExtensionSupported(*str)==1)));
 }
 
 // make sure we close everything when we exit
@@ -483,13 +494,13 @@ void AtExit() {
 //
 ///////////////////////////////////////////////////////////////////////////////
 #define JS_GLFW_CONSTANT(name) target->Set(JS_STR( #name ), JS_INT(GLFW_ ## name))
-#define JS_GLFW_SET_METHOD(name) NODE_SET_METHOD(target, #name , glfw::name);
+#define JS_GLFW_SET_METHOD(name) Nan::SetMethod(target, #name , glfw::name);
 
 extern "C" {
 void init(Handle<Object> target) {
   atexit(glfw::AtExit);
 
-  HandleScope scope;
+  Nan::HandleScope scope;
 
   /* GLFW initialization, termination and version querying */
   JS_GLFW_SET_METHOD(Init);

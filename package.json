@@ -1,33 +1,42 @@
 {
-   "name": "node-glfw-2",
-   "version": "0.2.3",
-   "description": "A NodeJS wrapper around GLFW",
-   "main": "index.js",
-   "author": "Mikael Bourges-Sevenier <mikeseven@gmail.com>",
-   "contributors": [
-       "Magnus Hoff <maghoff@gmail.com>",
-       {
-           "name": "Mikael Bourges-Sevenier",
-           "email": "mikeseven@gmail.com",
-           "twitter": "msevenier"
-       }
-   ],
-   "keywords": [ "glfw", "opengl", "3d", "graphics" ],
-   "maintainers": "Magnus Hoff <maghoff@gmail.com>",
-   "licenses": [{
-        "type": "BSD",
-        "url": "http://github.com/maghoff/node-glfw/raw/master/LICENSES"
-   }],
-   "repository": {
-       "type": "git",
-       "url": "http://github.com/maghoff/node-glfw"
-   },
-   "engines": {
-       "node": "0.6.5-0.11.3"
-   },
-   "scripts": {
-       "prepublish": "./prepublish.sh",
-       "install": "./build.sh"
-   },
-  "dependencies": { }
+    "name": "node-glfw-2",
+    "version": "0.2.3",
+    "description": "A NodeJS wrapper around GLFW",
+    "main": "index.js",
+    "author": "Mikael Bourges-Sevenier <mikeseven@gmail.com>",
+    "contributors": [
+        "Magnus Hoff <maghoff@gmail.com>",
+        {
+            "name": "Mikael Bourges-Sevenier",
+            "email": "mikeseven@gmail.com",
+            "twitter": "msevenier"
+        }
+    ],
+    "keywords": [
+        "glfw",
+        "opengl",
+        "3d",
+        "graphics"
+    ],
+    "maintainers": "Magnus Hoff <maghoff@gmail.com>",
+    "licenses": [
+        {
+            "type": "BSD",
+            "url": "http://github.com/maghoff/node-glfw/raw/master/LICENSES"
+        }
+    ],
+    "repository": {
+        "type": "git",
+        "url": "http://github.com/maghoff/node-glfw"
+    },
+    "engines": {
+        "node": "0.6.5-0.11.3"
+    },
+    "scripts": {
+        "prepublish": "./prepublish.sh",
+        "install": "./build.sh"
+    },
+    "dependencies": {
+        "nan": "^2.6.2"
+    }
 }

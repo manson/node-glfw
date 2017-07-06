@@ -21,6 +21,7 @@
       'include_dirs': [
         '<(module_root_dir)/deps/glew-1.10.0/include',
         '<(module_root_dir)/deps/glfw-3.0.4/include',
+        "<!(node -e \"require('nan')\")",
       ],
       'conditions': [
         ['OS=="linux"', {

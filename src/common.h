@@ -15,32 +15,37 @@
 
 // NodeJS includes
 #include <node.h>
+#include <nan.h>
 
 using namespace v8;
 
 namespace {
-#define JS_STR(...) v8::String::New(__VA_ARGS__)
-#define JS_INT(val) v8::Integer::New(val)
-#define JS_NUM(val) v8::Number::New(val)
-#define JS_BOOL(val) v8::Boolean::New(val)
-#define JS_METHOD(name) v8::Handle<v8::Value> name(const v8::Arguments& args)
+#define JS_STR(...) v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), __VA_ARGS__)
+#define JS_INT(val) v8::Integer::New(v8::Isolate::GetCurrent(), val)
+#define JS_NUM(val) v8::Number::New(v8::Isolate::GetCurrent(), val)
+#define JS_BOOL(val) v8::Boolean::New(v8::Isolate::GetCurrent(), val)
+//#define JS_METHOD(name) v8::Handle<v8::Value> name(const v8::Arguments& args)
+#define JS_METHOD(name) NAN_METHOD(name)
 #define JS_RETHROW(tc) v8::Local<v8::Value>::New(tc.Exception());
 
-template <typename T>
-static T* UnwrapThis(const v8::Arguments& args) {
-  return node::ObjectWrap::Unwrap<T>(args.This());
+// template <typename T>
+// static T* UnwrapThis(const v8::Arguments& args) {
+//   return node::ObjectWrap::Unwrap<T>(args.This());
+// }
+
+inline void ThrowError(const char* msg) {
+  // return v8::ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), msg)));
+  return Nan::ThrowError(msg);
 }
 
-inline v8::Handle<v8::Value> ThrowError(const char* msg) {
-  return v8::ThrowException(v8::Exception::Error(v8::String::New(msg)));
+inline void ThrowTypeError(const char* msg) {
+  // return v8::ThrowException(v8::Exception::TypeError(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), msg)));
+  return Nan::ThrowTypeError(msg);
 }
 
-inline v8::Handle<v8::Value> ThrowTypeError(const char* msg) {
-  return v8::ThrowException(v8::Exception::TypeError(v8::String::New(msg)));
-}
-
-inline v8::Handle<v8::Value> ThrowRangeError(const char* msg) {
-  return v8::ThrowException(v8::Exception::RangeError(v8::String::New(msg)));
+inline void ThrowRangeError(const char* msg) {
+  // return v8::ThrowException(v8::Exception::RangeError(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), msg)));
+  return Nan::ThrowRangeError(msg);
 }
 
 #define REQ_ARGS(N)                                                     \

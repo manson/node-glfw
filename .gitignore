@@ -11,3 +11,4 @@ npm-debug.log
 deps
 *.tar.gz
 *.zip
+node_modules
