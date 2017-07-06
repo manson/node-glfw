@@ -1,0 +1,1 @@
+/usr/bin/cc     CMakeFiles/clipboard.dir/clipboard.c.o CMakeFiles/clipboard.dir/__/deps/getopt.c.o  -o clipboard -rdynamic ../src/libglfw.so.3.0 -lGLU -lGL -lm -Wl,-rpath,/home/kenny/devel/tmp/glfw/node_modules/node-glfw-2/deps/glfw-3.0.4/src 

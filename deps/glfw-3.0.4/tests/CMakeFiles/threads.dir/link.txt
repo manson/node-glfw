@@ -1,0 +1,1 @@
+/usr/bin/cc     CMakeFiles/threads.dir/threads.c.o CMakeFiles/threads.dir/__/deps/tinycthread.c.o  -o threads -rdynamic ../src/libglfw.so.3.0 -lGLU -lGL -lm -lpthread -lrt -Wl,-rpath,/home/kenny/devel/tmp/glfw/node_modules/node-glfw-2/deps/glfw-3.0.4/src 
