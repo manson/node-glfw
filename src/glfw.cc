@@ -5,6 +5,7 @@
 using namespace v8;
 using namespace node;
 
+#include <vector>
 #include <iostream>
 using namespace std;
 
@@ -107,6 +108,96 @@ JS_METHOD(GetMonitors) {
 Nan::Persistent<v8::Object> glfw_events;
 int lastX=0,lastY=0;
 bool windowCreated=false;
+
+inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
+{
+  static uint32_t histogram[0x10000];
+  memset(histogram, 0, sizeof(histogram));
+
+  for (auto i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
+  for (auto i = 2; i < 0x10000; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+  for (auto i = 0; i < width*height; ++i) {
+    if (auto d = depth_image[i]) {
+      int f = histogram[d] * 255 / histogram[0xFFFF]; // 0-255 based on histogram location
+      rgb_image[i * 3 + 0] = 255 - f;
+      rgb_image[i * 3 + 1] = 0;
+      rgb_image[i * 3 + 2] = f;
+    } else {
+      rgb_image[i * 3 + 0] = 20;
+      rgb_image[i * 3 + 1] = 5;
+      rgb_image[i * 3 + 2] = 0;
+    }
+  }
+}
+
+struct Rect {
+  float x;
+  float y;
+  float w;
+  float h;
+};
+
+JS_METHOD(drawImage2D) {
+  const int width = info[0]->Uint32Value();
+  const int height = info[1]->Uint32Value();
+  const float ratio = width / (float) height;
+  const void* data = node::Buffer::Data(info[2]->ToObject());
+
+  GLuint texture;
+  std::vector<uint8_t> rgb;
+  int stride = width;
+  int alpha = 1.0;
+
+  glViewport(0, 0, width, height);
+  glClear(GL_COLOR_BUFFER_BIT);
+  glPushMatrix();
+  glOrtho(0, width, height, 0, -1, +1);
+
+  // Upload
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  rgb.resize(width * height * 4);
+  make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  // Show
+  Rect r;
+  r.x = 0;
+  r.y = 0;
+  r.w = width;
+  r.h = height;
+  glEnable(GL_BLEND);
+
+  glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+  glBegin(GL_QUADS);
+  glColor4f(1.0f, 1.0f, 1.0f, 1 - alpha);
+  glVertex2f(r.x, r.y);
+  glVertex2f(r.x + r.w, r.y);
+  glVertex2f(r.x + r.w, r.y + r.h);
+  glVertex2f(r.x, r.y + r.h);
+  glEnd();
+
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glEnable(GL_TEXTURE_2D);
+  glBegin(GL_QUADS);
+  glTexCoord2f(0, 0); glVertex2f(r.x, r.y);
+  glTexCoord2f(1, 0); glVertex2f(r.x + r.w, r.y);
+  glTexCoord2f(1, 1); glVertex2f(r.x + r.w, r.y + r.h);
+  glTexCoord2f(0, 1); glVertex2f(r.x, r.y + r.h);
+  glEnd();
+  glDisable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  glDisable(GL_BLEND);
+  glPopMatrix();
+}
 
 JS_METHOD(testScene) {
   int width = info[0]->Uint32Value();
@@ -794,6 +885,7 @@ void init(Handle<Object> target) {
   JS_GLFW_CONSTANT(DISCONNECTED);
 
   JS_GLFW_SET_METHOD(testScene);
+  JS_GLFW_SET_METHOD(drawImage2D);
 }
 
 NODE_MODULE(glfw, init)
