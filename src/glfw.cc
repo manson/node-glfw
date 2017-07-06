@@ -6,6 +6,7 @@ using namespace v8;
 using namespace node;
 
 #include <vector>
+#include <string>
 #include <iostream>
 using namespace std;
 
@@ -137,28 +138,21 @@ struct Rect {
   float h;
 };
 
-JS_METHOD(drawImage2D) {
-  const int width = info[0]->Uint32Value();
-  const int height = info[1]->Uint32Value();
-  const float ratio = width / (float) height;
-  const void* data = node::Buffer::Data(info[2]->ToObject());
-
+static void _DrawImage2D(const Rect& r, const std::string& type,
+                         const void* data, int width, int height,
+                         float alpha = 1.0) {
   GLuint texture;
-  std::vector<uint8_t> rgb;
-  int stride = width;
-  int alpha = 1.0;
-
-  glViewport(0, 0, width, height);
-  glClear(GL_COLOR_BUFFER_BIT);
-  glPushMatrix();
-  glOrtho(0, width, height, 0, -1, +1);
 
   // Upload
   glGenTextures(1, &texture);
   glBindTexture(GL_TEXTURE_2D, texture);
-  rgb.resize(width * height * 4);
-  make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+
+  if (type == "z16") {
+    std::vector<uint8_t> rgb;
+    rgb.resize(width * height * 4);
+    make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+  }
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -168,11 +162,6 @@ JS_METHOD(drawImage2D) {
   glBindTexture(GL_TEXTURE_2D, 0);
 
   // Show
-  Rect r;
-  r.x = 0;
-  r.y = 0;
-  r.w = width;
-  r.h = height;
   glEnable(GL_BLEND);
 
   glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
@@ -196,6 +185,33 @@ JS_METHOD(drawImage2D) {
   glBindTexture(GL_TEXTURE_2D, 0);
 
   glDisable(GL_BLEND);
+}
+
+JS_METHOD(drawImage2D) {
+  const int x = info[0]->Int32Value();        // Viewport x
+  const int y = info[1]->Int32Value();        // Viewport y
+  const int width = info[2]->Uint32Value();   // Viewport width
+  const int height = info[3]->Uint32Value();  // Viewport height
+
+  String::Utf8Value str(info[4]->ToString()); // Buffer type
+  std::string type = *str;
+  const void* data = node::Buffer::Data(info[5]->ToObject()); // Buffer pointer
+  const int data_width = info[6]->Uint32Value();  // Buffer width
+  const int data_height = info[7]->Uint32Value(); // Buffer height
+
+  Rect r;
+  r.x = x;
+  r.y = y;
+  r.w = width;
+  r.h = height;
+
+  glViewport(x, y, width, height);
+  glClear(GL_COLOR_BUFFER_BIT);
+  glPushMatrix();
+  glOrtho(0, width, height, 0, -1, +1);
+
+  _DrawImage2D(r, type, data, data_width, data_height);
+
   glPopMatrix();
 }
 
