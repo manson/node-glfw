@@ -195,7 +195,8 @@ JS_METHOD(drawImage2D) {
 
   String::Utf8Value str(info[4]->ToString()); // Buffer type
   std::string type = *str;
-  const void* data = node::Buffer::Data(info[5]->ToObject()); // Buffer pointer
+  Nan::TypedArrayContents<uint16_t> buffer(info[5].As<Uint16Array>());
+  const void* data = *buffer; // Buffer pointer
   const int data_width = info[6]->Uint32Value();  // Buffer width
   const int data_height = info[7]->Uint32Value(); // Buffer height
 
