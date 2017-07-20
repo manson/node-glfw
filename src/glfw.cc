@@ -216,6 +216,103 @@ JS_METHOD(drawImage2D) {
   glPopMatrix();
 }
 
+static GLenum Str2Format(const std::string& str) {
+  if (str == "z16") {
+    return GL_RGB;
+  } else if (str == "rgb8") {
+    return GL_RGB;
+  } else if (str == "y8") {
+    return GL_LUMINANCE;
+  }
+  return GL_LUMINANCE;
+}
+
+JS_METHOD(draw2x2Streams) {
+  size_t argIndex = 0;
+  Nan::TypedArrayContents<uint8_t> buffer0(info[argIndex++].As<Uint8Array>());
+  const void* data0 = *buffer0;
+  String::Utf8Value str0(info[argIndex++]->ToString());
+  std::string type0 = *str0;
+  uint32_t width0 = info[argIndex++]->Uint32Value();
+  uint32_t height0 = info[argIndex++]->Uint32Value();
+
+  Nan::TypedArrayContents<uint8_t> buffer1(info[argIndex++].As<Uint8Array>());
+  const void* data1 = *buffer1;
+  String::Utf8Value str1(info[argIndex++]->ToString());
+  std::string type1 = *str1;
+  uint32_t width1 = info[argIndex++]->Uint32Value();
+  uint32_t height1 = info[argIndex++]->Uint32Value();
+
+  Nan::TypedArrayContents<uint8_t> buffer2(info[argIndex++].As<Uint8Array>());
+  const void* data2 = *buffer2;
+  String::Utf8Value str2(info[argIndex++]->ToString());
+  std::string type2 = *str2;
+  uint32_t width2 = info[argIndex++]->Uint32Value();
+  uint32_t height2 = info[argIndex++]->Uint32Value();
+
+  Nan::TypedArrayContents<uint8_t> buffer3(info[argIndex++].As<Uint8Array>());
+  const void* data3 = *buffer3;
+  String::Utf8Value str3(info[argIndex++]->ToString());
+  std::string type3 = *str3;
+  uint32_t width3 = info[argIndex++]->Uint32Value();
+  uint32_t height3 = info[argIndex++]->Uint32Value();
+
+  glClear(GL_COLOR_BUFFER_BIT);
+  glPixelZoom(1, -1);
+
+  // X _
+  // _ _
+  //
+  if (data0) {
+    glRasterPos2f(-1, 1);
+    std::vector<uint8_t> rgb;
+    rgb.resize(width0 * height0 * 4);
+    // Convert depth to rgb (blue----red)
+    make_depth_histogram(rgb.data(),
+      reinterpret_cast<const uint16_t *>(data0), width0, height0);
+    auto format = Str2Format(type0);
+    glDrawPixels(width0, height0, format, GL_UNSIGNED_BYTE, rgb.data());
+
+    // // Display depth databy linearly mapping depth
+    // //  between 0 and 2 meters to the red channel
+    // glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
+    // glDrawPixels(width0, height0, GL_RED, GL_UNSIGNED_SHORT, data0);
+    // glPixelTransferf(GL_RED_SCALE, 1.0f);
+  }
+
+  // _ X
+  // _ _
+  //
+  // Display color image as RGB triples
+  if (data1) {
+    glRasterPos2f(0, 1);
+    auto format = Str2Format(type1);
+    glDrawPixels(width1, height1, format, GL_UNSIGNED_BYTE, data1);
+  }
+
+  // _ _
+  // X _
+  //
+  // Display infrared image by mapping IR intensity to visible luminance
+  if (data2) {
+    glRasterPos2f(-1, 0);
+    auto format = Str2Format(type2);
+    glDrawPixels(width2, height2, format, GL_UNSIGNED_BYTE, data2);
+  }
+
+  // _ _
+  // _ X
+  //
+  // Display second infrared image by mapping IR intensity to visible luminance
+  if (data3) {
+    glRasterPos2f(0, 0);
+    auto format = Str2Format(type3);
+    glDrawPixels(width3, height3, format, GL_UNSIGNED_BYTE, data3);
+  }
+
+  SET_RETURN_VALUE(Nan::Undefined());
+}
+
 JS_METHOD(testScene) {
   int width = info[0]->Uint32Value();
   int height = info[1]->Uint32Value();
@@ -903,6 +1000,7 @@ void init(Handle<Object> target) {
 
   JS_GLFW_SET_METHOD(testScene);
   JS_GLFW_SET_METHOD(drawImage2D);
+  JS_GLFW_SET_METHOD(draw2x2Streams);
 }
 
 NODE_MODULE(glfw, init)
