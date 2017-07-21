@@ -27,6 +27,7 @@
         ['OS=="linux"', {
           'libraries': [
             '<(module_root_dir)/deps/glfw-3.0.4/src/libglfw.so',
+            '-lGLU'
           ],
           'ldflags': [
             '-Wl,-rpath,\$$ORIGIN/../../deps/glfw-3.0.4/src',

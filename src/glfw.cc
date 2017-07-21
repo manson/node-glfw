@@ -15,6 +15,7 @@ namespace glfw {
 /* @Module: initialization and version information */
 
 #define SET_RETURN_VALUE(x) info.GetReturnValue().Set(x);
+struct state { double yaw, pitch, lastX, lastY; bool ml;};
 
 JS_METHOD(Init) {
   SET_RETURN_VALUE(JS_BOOL(glfwInit()==GL_TRUE));
@@ -225,6 +226,155 @@ static GLenum Str2Format(const std::string& str) {
     return GL_LUMINANCE;
   }
   return GL_LUMINANCE;
+}
+
+struct float3
+{
+    float x, y, z;
+};
+
+struct float2
+{
+    float x, y;
+};
+
+GLuint upload_texture(
+    uint8_t* data,
+    uint32_t width,
+    uint32_t height,
+    uint32_t stride,
+    std::string format) {
+    static std::vector<uint8_t> rgb;
+    // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
+    GLuint texture;
+    glGenTextures(1, &texture);
+
+    glBindTexture(GL_TEXTURE_2D, texture);
+    stride = stride == 0 ? width : stride;
+    //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
+
+    if (format == "z16") {
+        rgb.resize(width * height * 4);
+        make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+    } else if (format == "rgb8") {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    } else if (format == "y8") {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+    } else if (format == "raw8") {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+    } else {
+        printf("Error: not supported color format in glfw: %s\n", format.c_str());
+    }
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return texture;
+}
+
+JS_METHOD(drawDepthAndColorAsPointCloud) {
+  size_t argIndex = 0;
+  GLFWwindow* win = reinterpret_cast<GLFWwindow*>(info[argIndex++]->IntegerValue());
+
+  Nan::TypedArrayContents<float> buffer0(info[argIndex++].As<Float32Array>());
+  const float3* points = reinterpret_cast<float3*>(*buffer0);
+
+  Nan::TypedArrayContents<float> buffer1(info[argIndex++].As<Float32Array>());
+  const float2* tex_coord_points = reinterpret_cast<float2*>(*buffer1);
+
+  Nan::TypedArrayContents<uint8_t> buffer2(info[argIndex++].As<Uint8Array>());
+  uint8_t* color = *buffer2;
+
+  uint32_t color_width = info[argIndex++]->Uint32Value();
+  uint32_t color_height = info[argIndex++]->Uint32Value();
+  uint32_t color_stride = info[argIndex++]->Uint32Value();
+  String::Utf8Value str0(info[argIndex++]->ToString());
+  std::string color_format_str = *str0;
+  auto color_format = Str2Format(color_format_str);
+
+  uint32_t depth_intrin_width = info[argIndex++]->Uint32Value();
+  uint32_t depth_intrin_height = info[argIndex++]->Uint32Value();
+  uint32_t width = info[argIndex++]->Uint32Value();
+  uint32_t height = info[argIndex++]->Uint32Value();
+
+  static bool first = false;
+  static state app_state = {0, 0, 0, 0, false};
+  if (!first) {
+      glfwSetWindowUserPointer(win, &app_state);
+      glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int /*mods*/)
+      {
+          auto s = (state *)glfwGetWindowUserPointer(win);
+          if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
+      });
+
+      glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y)
+      {
+          auto s = (state *)glfwGetWindowUserPointer(win);
+          if(s->ml)
+          {
+              s->yaw -= (x - s->lastX);
+              s->yaw = max(s->yaw, -120.0);
+              s->yaw = min(s->yaw, +120.0);
+              s->pitch += (y - s->lastY);
+              s->pitch = max(s->pitch, -80.0);
+              s->pitch = min(s->pitch, +80.0);
+          }
+          s->lastX = x;
+          s->lastY = y;
+      });
+
+  }
+
+  GLuint tex = upload_texture(color, color_width, color_height, color_stride, color_format_str);
+  glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+  glViewport(0, 0, width, height);
+  glClearColor(52.0f/255, 72.f/255, 94.0f/255.0f, 1);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glMatrixMode(GL_PROJECTION);
+  glPushMatrix();
+  gluPerspective(60, (float)width/height, 0.01f, 20.0f);
+
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  gluLookAt(0,0,0, 0,0,1, 0,-1,0);
+
+  glTranslatef(0,0,+0.5f);
+  glRotated(app_state.pitch, 1, 0, 0);
+  glRotated(app_state.yaw, 0, 1, 0);
+  glTranslatef(0,0,-0.5f);
+
+  glPointSize((float)width/640);
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glBegin(GL_POINTS);
+
+  uint32_t index = 0;
+  for (int y=0; y<depth_intrin_height; ++y)
+  {
+      for(int x=0; x<depth_intrin_width; ++x)
+      {
+          if(points[index].z)
+          {
+              // auto trans = transform(&extrin, *points);
+              // auto tex_xy = project_to_texcoord(&mapped_intrin, trans);
+              glTexCoord2f(tex_coord_points[index].x, tex_coord_points[index].y);
+              glVertex3f(points[index].x, points[index].y, points[index].z);
+          }
+          index++;
+      }
+  }
+
+  glEnd();
+  glPopMatrix();
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();
+  glPopAttrib();
 }
 
 JS_METHOD(draw2x2Streams) {
@@ -1001,6 +1151,7 @@ void init(Handle<Object> target) {
   JS_GLFW_SET_METHOD(testScene);
   JS_GLFW_SET_METHOD(drawImage2D);
   JS_GLFW_SET_METHOD(draw2x2Streams);
+  JS_GLFW_SET_METHOD(drawDepthAndColorAsPointCloud);
 }
 
 NODE_MODULE(glfw, init)
