@@ -377,6 +377,21 @@ JS_METHOD(drawDepthAndColorAsPointCloud) {
   glPopAttrib();
 }
 
+Nan::Callback* global_js_key_callback = nullptr;
+
+static void global_key_func(GLFWwindow *, int key, int scancode, int action, int mods) {
+  if (global_js_key_callback) {
+    v8::Local<v8::Value> argv[4] = {Nan::New(key), Nan::New(action), Nan::New(scancode), Nan::New(mods)};
+    global_js_key_callback->Call(4, argv);
+  }
+}
+
+JS_METHOD(setKeyCallback) {
+  GLFWwindow* win = reinterpret_cast<GLFWwindow*>(info[0]->IntegerValue());
+  global_js_key_callback = new Nan::Callback(info[1].As<v8::Function>());
+  glfwSetKeyCallback(win, global_key_func);
+}
+
 JS_METHOD(draw2x2Streams) {
   size_t argIndex = 0;
   Nan::TypedArrayContents<uint8_t> buffer0(info[argIndex++].As<Uint8Array>());
@@ -1152,6 +1167,7 @@ void init(Handle<Object> target) {
   JS_GLFW_SET_METHOD(drawImage2D);
   JS_GLFW_SET_METHOD(draw2x2Streams);
   JS_GLFW_SET_METHOD(drawDepthAndColorAsPointCloud);
+  JS_GLFW_SET_METHOD(setKeyCallback);
 }
 
 NODE_MODULE(glfw, init)
