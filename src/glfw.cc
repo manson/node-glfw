@@ -158,6 +158,9 @@ static void _DrawImage2D(const Rect& r, const std::string& type,
         reinterpret_cast<const uint16_t *>(data), width, height);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
         0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+  } else if (type == "rgb8") {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
+        0, GL_RGB, GL_UNSIGNED_BYTE, data);
   }
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
