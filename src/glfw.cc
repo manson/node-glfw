@@ -111,16 +111,19 @@ Nan::Persistent<v8::Object> glfw_events;
 int lastX=0,lastY=0;
 bool windowCreated=false;
 
-inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
+inline void make_depth_histogram(uint8_t rgb_image[],
+    const uint16_t depth_image[], int width, int height)
 {
   static uint32_t histogram[0x10000];
   memset(histogram, 0, sizeof(histogram));
 
   for (auto i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
-  for (auto i = 2; i < 0x10000; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+  // Build a cumulative histogram for the indices in [1,0xFFFF]
+  for (auto i = 2; i < 0x10000; ++i) histogram[i] += histogram[i - 1];
   for (auto i = 0; i < width*height; ++i) {
     if (auto d = depth_image[i]) {
-      int f = histogram[d] * 255 / histogram[0xFFFF]; // 0-255 based on histogram location
+      // 0-255 based on histogram location
+      int f = histogram[d] * 255 / histogram[0xFFFF];
       rgb_image[i * 3 + 0] = 255 - f;
       rgb_image[i * 3 + 1] = 0;
       rgb_image[i * 3 + 2] = f;
@@ -151,8 +154,10 @@ static void _DrawImage2D(const Rect& r, const std::string& type,
   if (type == "z16") {
     std::vector<uint8_t> rgb;
     rgb.resize(width * height * 4);
-    make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+    make_depth_histogram(rgb.data(),
+        reinterpret_cast<const uint16_t *>(data), width, height);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
+        0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
   }
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -228,14 +233,12 @@ static GLenum Str2Format(const std::string& str) {
   return GL_LUMINANCE;
 }
 
-struct float3
-{
-    float x, y, z;
+struct float3 {
+  float x, y, z;
 };
 
-struct float2
-{
-    float x, y;
+struct float2 {
+  float x, y;
 };
 
 GLuint upload_texture(
@@ -243,28 +246,35 @@ GLuint upload_texture(
     uint32_t width,
     uint32_t height,
     uint32_t stride,
-    std::string format) {
+    const std::string& format) {
     static std::vector<uint8_t> rgb;
-    // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
+    // If the frame timestamp has changed
+    //  since the last time show (...) was called, re-upload the texture
     GLuint texture;
     glGenTextures(1, &texture);
 
     glBindTexture(GL_TEXTURE_2D, texture);
     stride = stride == 0 ? width : stride;
-    //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
+    // glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
 
     if (format == "z16") {
-        rgb.resize(width * height * 4);
-        make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+      rgb.resize(width * height * 4);
+      make_depth_histogram(rgb.data(),
+          reinterpret_cast<const uint16_t *>(data),
+          width, height);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
+          0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
     } else if (format == "rgb8") {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
+          0, GL_RGB, GL_UNSIGNED_BYTE, data);
     } else if (format == "y8") {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
+          0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
     } else if (format == "raw8") {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height,
+          0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
     } else {
-        printf("Error: not supported color format in glfw: %s\n", format.c_str());
+      printf("Error: not supported color format in glfw: %s\n", format.c_str());
     }
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -277,7 +287,8 @@ GLuint upload_texture(
 
 JS_METHOD(drawDepthAndColorAsPointCloud) {
   size_t argIndex = 0;
-  GLFWwindow* win = reinterpret_cast<GLFWwindow*>(info[argIndex++]->IntegerValue());
+  GLFWwindow* win =
+      reinterpret_cast<GLFWwindow*>(info[argIndex++]->IntegerValue());
 
   Nan::TypedArrayContents<float> buffer0(info[argIndex++].As<Float32Array>());
   const float3* points = reinterpret_cast<float3*>(*buffer0);
@@ -293,7 +304,7 @@ JS_METHOD(drawDepthAndColorAsPointCloud) {
   uint32_t color_stride = info[argIndex++]->Uint32Value();
   String::Utf8Value str0(info[argIndex++]->ToString());
   std::string color_format_str = *str0;
-  auto color_format = Str2Format(color_format_str);
+  // auto color_format = Str2Format(color_format_str);
 
   uint32_t depth_intrin_width = info[argIndex++]->Uint32Value();
   uint32_t depth_intrin_height = info[argIndex++]->Uint32Value();
@@ -303,32 +314,30 @@ JS_METHOD(drawDepthAndColorAsPointCloud) {
   static bool first = false;
   static state app_state = {0, 0, 0, 0, false};
   if (!first) {
-      glfwSetWindowUserPointer(win, &app_state);
-      glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int /*mods*/)
-      {
-          auto s = (state *)glfwGetWindowUserPointer(win);
-          if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
-      });
+    glfwSetWindowUserPointer(win, &app_state);
+    glfwSetMouseButtonCallback(win,
+        [](GLFWwindow * win, int button, int action, int /*mods*/) {
+      auto s = (state *)glfwGetWindowUserPointer(win);
+      if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
+    });
 
-      glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y)
-      {
-          auto s = (state *)glfwGetWindowUserPointer(win);
-          if(s->ml)
-          {
-              s->yaw -= (x - s->lastX);
-              s->yaw = max(s->yaw, -120.0);
-              s->yaw = min(s->yaw, +120.0);
-              s->pitch += (y - s->lastY);
-              s->pitch = max(s->pitch, -80.0);
-              s->pitch = min(s->pitch, +80.0);
-          }
-          s->lastX = x;
-          s->lastY = y;
-      });
-
+    glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y) {
+      auto s = (state *)glfwGetWindowUserPointer(win);
+      if(s->ml) {
+        s->yaw -= (x - s->lastX);
+        s->yaw = max(s->yaw, -120.0);
+        s->yaw = min(s->yaw, +120.0);
+        s->pitch += (y - s->lastY);
+        s->pitch = max(s->pitch, -80.0);
+        s->pitch = min(s->pitch, +80.0);
+      }
+      s->lastX = x;
+      s->lastY = y;
+    });
   }
 
-  GLuint tex = upload_texture(color, color_width, color_height, color_stride, color_format_str);
+  GLuint tex = upload_texture(color, color_width, color_height,
+      color_stride, color_format_str);
   glPushAttrib(GL_ALL_ATTRIB_BITS);
 
   glViewport(0, 0, width, height);
@@ -355,19 +364,16 @@ JS_METHOD(drawDepthAndColorAsPointCloud) {
   glBegin(GL_POINTS);
 
   uint32_t index = 0;
-  for (int y=0; y<depth_intrin_height; ++y)
-  {
-      for(int x=0; x<depth_intrin_width; ++x)
-      {
-          if(points[index].z)
-          {
-              // auto trans = transform(&extrin, *points);
-              // auto tex_xy = project_to_texcoord(&mapped_intrin, trans);
-              glTexCoord2f(tex_coord_points[index].x, tex_coord_points[index].y);
-              glVertex3f(points[index].x, points[index].y, points[index].z);
-          }
-          index++;
+  for (uint32_t y=0; y<depth_intrin_height; ++y) {
+    for(uint32_t x=0; x<depth_intrin_width; ++x) {
+      if(points[index].z) {
+        // auto trans = transform(&extrin, *points);
+        // auto tex_xy = project_to_texcoord(&mapped_intrin, trans);
+        glTexCoord2f(tex_coord_points[index].x, tex_coord_points[index].y);
+        glVertex3f(points[index].x, points[index].y, points[index].z);
       }
+      index++;
+    }
   }
 
   glEnd();
@@ -379,9 +385,11 @@ JS_METHOD(drawDepthAndColorAsPointCloud) {
 
 Nan::Callback* global_js_key_callback = nullptr;
 
-static void global_key_func(GLFWwindow *, int key, int scancode, int action, int mods) {
+static void global_key_func(GLFWwindow *, int key,
+    int scancode, int action, int mods) {
   if (global_js_key_callback) {
-    v8::Local<v8::Value> argv[4] = {Nan::New(key), Nan::New(action), Nan::New(scancode), Nan::New(mods)};
+    v8::Local<v8::Value> argv[4] = {
+        Nan::New(key), Nan::New(action), Nan::New(scancode), Nan::New(mods)};
     global_js_key_callback->Call(4, argv);
   }
 }
@@ -562,7 +570,6 @@ JS_METHOD(CreateWindow) {
 
   // Set callback functions
   glfw_events.Reset(info.This()->Get(JS_STR("events"))->ToObject());
-  // glfw_events=Persistent<Object>::New(info.This()->Get(JS_STR("events"))->ToObject());
 
   SET_RETURN_VALUE(JS_NUM((uint64_t) window));
 }
