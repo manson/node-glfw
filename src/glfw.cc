@@ -17,6 +17,14 @@ namespace glfw {
 #define SET_RETURN_VALUE(x) info.GetReturnValue().Set(x);
 struct state { double yaw, pitch, lastX, lastY; bool ml;};
 
+struct float3 {
+  float x, y, z;
+};
+
+struct float2 {
+  float x, y;
+};
+
 JS_METHOD(Init) {
   SET_RETURN_VALUE(JS_BOOL(glfwInit()==GL_TRUE));
 }
@@ -140,6 +148,19 @@ struct Rect {
   float y;
   float w;
   float h;
+  // Create new rect within original boundaries with give aspect ration
+  Rect adjust_ratio(float2 size) const
+  {
+      auto H = static_cast<float>(h), W = static_cast<float>(h) * size.x / size.y;
+      if (W > w)
+      {
+          auto scale = w / W;
+          W *= scale;
+          H *= scale;
+      }
+
+      return{ x + (w - W) / 2, y + (h - H) / 2, W, H };
+  }
 };
 
 static void _DrawImage2D(const Rect& r, const std::string& type,
@@ -236,19 +257,30 @@ static GLenum Str2Format(const std::string& str) {
   return GL_LUMINANCE;
 }
 
-struct float3 {
-  float x, y, z;
-};
+void show(GLuint tex,
+    const Rect& r,
+    std::string& format) {
+    if (!tex)
+        return;
 
-struct float2 {
-  float x, y;
-};
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glEnable(GL_TEXTURE_2D);
+    glBegin(GL_QUAD_STRIP);
+    glTexCoord2f(0.f, 1.f); glVertex2f(r.x, r.y + r.h);
+    glTexCoord2f(0.f, 0.f); glVertex2f(r.x, r.y);
+    glTexCoord2f(1.f, 1.f); glVertex2f(r.x + r.w, r.y + r.h);
+    glTexCoord2f(1.f, 0.f); glVertex2f(r.x + r.w, r.y);
+    glEnd();
+    glDisable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // draw_text(r.x + 15, r.y + 20, rs2_stream_to_string(stream));
+}
 
 GLuint upload_texture(
     uint8_t* data,
     uint32_t width,
     uint32_t height,
-    uint32_t stride,
     const std::string& format) {
     static std::vector<uint8_t> rgb;
     // If the frame timestamp has changed
@@ -257,7 +289,7 @@ GLuint upload_texture(
     glGenTextures(1, &texture);
 
     glBindTexture(GL_TEXTURE_2D, texture);
-    stride = stride == 0 ? width : stride;
+
     // glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
 
     if (format == "z16") {
@@ -339,8 +371,7 @@ JS_METHOD(drawDepthAndColorAsPointCloud) {
     });
   }
 
-  GLuint tex = upload_texture(color, color_width, color_height,
-      color_stride, color_format_str);
+  GLuint tex = upload_texture(color, color_width, color_height, color_format_str);
   glPushAttrib(GL_ALL_ATTRIB_BITS);
 
   glViewport(0, 0, width, height);
@@ -405,6 +436,12 @@ JS_METHOD(setKeyCallback) {
 
 JS_METHOD(draw2x2Streams) {
   size_t argIndex = 0;
+  GLFWwindow* win =
+    reinterpret_cast<GLFWwindow*>(info[argIndex++]->IntegerValue());
+  int32_t winW = 0;
+  int32_t winH = 0;
+  glfwGetWindowSize(win, &winW, &winH);
+
   Nan::TypedArrayContents<uint8_t> buffer0(info[argIndex++].As<Uint8Array>());
   const void* data0 = *buffer0;
   String::Utf8Value str0(info[argIndex++]->ToString());
@@ -439,31 +476,31 @@ JS_METHOD(draw2x2Streams) {
   // X _
   // _ _
   //
-  if (data0) {
-    glRasterPos2f(-1, 1);
-    std::vector<uint8_t> rgb;
-    rgb.resize(width0 * height0 * 4);
-    // Convert depth to rgb (blue----red)
-    make_depth_histogram(rgb.data(),
-      reinterpret_cast<const uint16_t *>(data0), width0, height0);
-    auto format = Str2Format(type0);
-    glDrawPixels(width0, height0, format, GL_UNSIGNED_BYTE, rgb.data());
+  // if (data0) {
+  //   glRasterPos2f(-1, 1);
+  //   auto format = Str2Format(type0);
+  //   glDrawPixels(width0, height0, format, GL_UNSIGNED_BYTE, data0);
+  // }
 
-    // // Display depth databy linearly mapping depth
-    // //  between 0 and 2 meters to the red channel
-    // glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
-    // glDrawPixels(width0, height0, GL_RED, GL_UNSIGNED_SHORT, data0);
-    // glPixelTransferf(GL_RED_SCALE, 1.0f);
+  if (data0) {
+    GLuint tex0 = upload_texture((uint8_t*)data0, width0, height0, type0);
+    Rect rect = { 0, 0, winW/2, winH };
+    show(tex0, rect.adjust_ratio({float(width0), float(height0)}), type0);
   }
 
   // _ X
   // _ _
   //
   // Display color image as RGB triples
+  // if (data1) {
+  //   glRasterPos2f(0, 1);
+  //   auto format = Str2Format(type1);
+  //   glDrawPixels(width1, height1, format, GL_UNSIGNED_BYTE, data1);
+  // }
   if (data1) {
-    glRasterPos2f(0, 1);
-    auto format = Str2Format(type1);
-    glDrawPixels(width1, height1, format, GL_UNSIGNED_BYTE, data1);
+    GLuint tex1 = upload_texture((uint8_t*)data1, width1, height1, type1);
+    Rect rect = { winW/2, 0, winW/2, winH };
+    show(tex1, rect.adjust_ratio({float(width1), float(height1)}), type1);
   }
 
   // _ _
@@ -485,7 +522,6 @@ JS_METHOD(draw2x2Streams) {
     auto format = Str2Format(type3);
     glDrawPixels(width3, height3, format, GL_UNSIGNED_BYTE, data3);
   }
-
   SET_RETURN_VALUE(Nan::Undefined());
 }
 
@@ -584,6 +620,24 @@ JS_METHOD(DestroyWindow) {
     glfwDestroyWindow(window);
   }
   SET_RETURN_VALUE(Nan::Undefined());
+}
+
+JS_METHOD(Ortho) {
+  int32_t val0=info[0]->IntegerValue();
+  int32_t val1=info[1]->IntegerValue();
+  int32_t val2=info[2]->IntegerValue();
+  int32_t val3=info[3]->IntegerValue();
+  int32_t val4=info[4]->IntegerValue();
+  int32_t val5=info[5]->IntegerValue();
+  glOrtho(val0, val1, val2, val3, val4, val5);
+}
+
+JS_METHOD(PushMatrix) {
+  glPushMatrix();
+}
+
+JS_METHOD(PopMatrix) {
+  glPopMatrix();
 }
 
 JS_METHOD(SetWindowTitle) {
@@ -879,6 +933,9 @@ void init(Handle<Object> target) {
   JS_GLFW_SET_METHOD(GetWindowAttrib);
   JS_GLFW_SET_METHOD(PollEvents);
   JS_GLFW_SET_METHOD(WaitEvents);
+  JS_GLFW_SET_METHOD(Ortho);
+  JS_GLFW_SET_METHOD(PushMatrix);
+  JS_GLFW_SET_METHOD(PopMatrix);
 
   /* Input handling */
   JS_GLFW_SET_METHOD(GetKey);
