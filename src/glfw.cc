@@ -15,7 +15,7 @@ namespace glfw {
 /* @Module: initialization and version information */
 
 #define SET_RETURN_VALUE(x) info.GetReturnValue().Set(x);
-struct state { double yaw, pitch, lastX, lastY; bool ml;};
+struct state { double yaw, pitch, lastX, lastY; bool ml; float offset_x, offset_y;};
 
 struct float3 {
   float x, y, z;
@@ -320,102 +320,132 @@ GLuint upload_texture(
     return texture;
 }
 
+static state app_state = {0, 0, 0, 0, false, 0, 0};
+
+void register_callbacks(GLFWwindow* window) {
+  glfwSetWindowUserPointer(window, &app_state);
+  glfwSetMouseButtonCallback(window,
+      [](GLFWwindow * win, int button, int action, int /*mods*/) {
+    auto s = (state *)glfwGetWindowUserPointer(win);
+    if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
+  });
+  glfwSetScrollCallback(window, [](GLFWwindow * win, double xoffset, double yoffset)
+  {
+      auto s = (state *)glfwGetWindowUserPointer(win);
+      s->offset_x += static_cast<float>(xoffset);
+      s->offset_y += static_cast<float>(yoffset);
+  });
+  glfwSetCursorPosCallback(window, [](GLFWwindow * win, double x, double y) {
+    auto s = (state *)glfwGetWindowUserPointer(win);
+    if(s->ml) {
+      s->yaw -= (x - s->lastX);
+      s->yaw = max(s->yaw, -120.0);
+      s->yaw = min(s->yaw, +120.0);
+      s->pitch += (y - s->lastY);
+      s->pitch = max(s->pitch, -80.0);
+      s->pitch = min(s->pitch, +80.0);
+    }
+    s->lastX = x;
+    s->lastY = y;
+  });
+  glfwSetKeyCallback(window, [](GLFWwindow * win, int key, int scancode, int action, int mods)
+  {
+      auto s = (state *)glfwGetWindowUserPointer(win);
+
+      // bool bext = false, bint = false, bloc = false;
+      if (0 == action) //on key release
+      {
+          if (key == GLFW_KEY_SPACE)
+          {
+              s->yaw = s->pitch = 0; s->offset_x = s->offset_y = 0.0;
+          }
+      }
+  });
+}
+
 JS_METHOD(drawDepthAndColorAsPointCloud) {
   size_t argIndex = 0;
   GLFWwindow* win =
       reinterpret_cast<GLFWwindow*>(info[argIndex++]->IntegerValue());
 
   Nan::TypedArrayContents<float> buffer0(info[argIndex++].As<Float32Array>());
-  const float3* points = reinterpret_cast<float3*>(*buffer0);
+  const float3* vertices = reinterpret_cast<float3*>(*buffer0);
+
+  uint32_t point_count = info[argIndex++]->Uint32Value();
 
   Nan::TypedArrayContents<float> buffer1(info[argIndex++].As<Float32Array>());
-  const float2* tex_coord_points = reinterpret_cast<float2*>(*buffer1);
+  const float2* tex_coords = reinterpret_cast<float2*>(*buffer1);
 
   Nan::TypedArrayContents<uint8_t> buffer2(info[argIndex++].As<Uint8Array>());
   uint8_t* color = *buffer2;
 
   uint32_t color_width = info[argIndex++]->Uint32Value();
   uint32_t color_height = info[argIndex++]->Uint32Value();
-  uint32_t color_stride = info[argIndex++]->Uint32Value();
   String::Utf8Value str0(info[argIndex++]->ToString());
   std::string color_format_str = *str0;
-  // auto color_format = Str2Format(color_format_str);
 
-  uint32_t depth_intrin_width = info[argIndex++]->Uint32Value();
-  uint32_t depth_intrin_height = info[argIndex++]->Uint32Value();
-  uint32_t width = info[argIndex++]->Uint32Value();
-  uint32_t height = info[argIndex++]->Uint32Value();
-
-  static bool first = false;
-  static state app_state = {0, 0, 0, 0, false};
-  if (!first) {
-    glfwSetWindowUserPointer(win, &app_state);
-    glfwSetMouseButtonCallback(win,
-        [](GLFWwindow * win, int button, int action, int /*mods*/) {
-      auto s = (state *)glfwGetWindowUserPointer(win);
-      if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
-    });
-
-    glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y) {
-      auto s = (state *)glfwGetWindowUserPointer(win);
-      if(s->ml) {
-        s->yaw -= (x - s->lastX);
-        s->yaw = max(s->yaw, -120.0);
-        s->yaw = min(s->yaw, +120.0);
-        s->pitch += (y - s->lastY);
-        s->pitch = max(s->pitch, -80.0);
-        s->pitch = min(s->pitch, +80.0);
-      }
-      s->lastX = x;
-      s->lastY = y;
-    });
+  static bool first = true;
+  if (first) {
+    first = false;
+    register_callbacks(win);
   }
-
-  GLuint tex = upload_texture(color, color_width, color_height, color_format_str);
+  GLuint tex = 0;
+  if (color)
+    tex = upload_texture(color, color_width, color_height, color_format_str);
+  glPopMatrix();
   glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-  glViewport(0, 0, width, height);
-  glClearColor(52.0f/255, 72.f/255, 94.0f/255.0f, 1);
+  int32_t winW, winH;
+  float width, height;
+  glfwGetWindowSize(win, &winW, &winH);
+  width = float(winW);
+  height = float(winH);
+  glClearColor(52.0f / 255, 72.f / 255, 94.0f / 255, 1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glMatrixMode(GL_PROJECTION);
   glPushMatrix();
-  gluPerspective(60, (float)width/height, 0.01f, 20.0f);
+  gluPerspective(60, width / height, 0.01f, 10.0f);
 
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
-  gluLookAt(0,0,0, 0,0,1, 0,-1,0);
+  gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
 
-  glTranslatef(0,0,+0.5f);
+  glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
   glRotated(app_state.pitch, 1, 0, 0);
   glRotated(app_state.yaw, 0, 1, 0);
-  glTranslatef(0,0,-0.5f);
+  glTranslatef(0, 0, -0.5f);
 
-  glPointSize((float)width/640);
+  glPointSize(width / 640);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, tex);
+  float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
+  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
   glBegin(GL_POINTS);
 
-  uint32_t index = 0;
-  for (uint32_t y=0; y<depth_intrin_height; ++y) {
-    for(uint32_t x=0; x<depth_intrin_width; ++x) {
-      if(points[index].z) {
-        // auto trans = transform(&extrin, *points);
-        // auto tex_xy = project_to_texcoord(&mapped_intrin, trans);
-        glTexCoord2f(tex_coord_points[index].x, tex_coord_points[index].y);
-        glVertex3f(points[index].x, points[index].y, points[index].z);
+
+  /* this segment actually prints the pointcloud */
+  for (int i = 0; i < point_count; i++)
+  {
+      if (vertices[i].z)
+      {
+          // upload the point and texture coordinates only for points we have depth data for
+          glVertex3f(vertices[i].x, vertices[i].y, vertices[i].z);
+          glTexCoord2f(tex_coords[i].x, tex_coords[i].y);
       }
-      index++;
-    }
   }
 
+  // OpenGL cleanup
   glEnd();
   glPopMatrix();
   glMatrixMode(GL_PROJECTION);
   glPopMatrix();
   glPopAttrib();
+  glPushMatrix();
 }
+
 
 Nan::Callback* global_js_key_callback = nullptr;
 
