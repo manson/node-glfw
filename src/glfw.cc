@@ -427,7 +427,7 @@ JS_METHOD(drawDepthAndColorAsPointCloud) {
 
 
   /* this segment actually prints the pointcloud */
-  for (int i = 0; i < point_count; i++)
+  for (uint32_t i = 0; i < point_count; i++)
   {
       if (vertices[i].z)
       {
@@ -500,7 +500,6 @@ JS_METHOD(draw2x2Streams) {
   uint32_t width3 = info[argIndex++]->Uint32Value();
   uint32_t height3 = info[argIndex++]->Uint32Value();
 
-  glClear(GL_COLOR_BUFFER_BIT);
   glPixelZoom(1, -1);
 
   // X _
@@ -514,7 +513,7 @@ JS_METHOD(draw2x2Streams) {
 
   if (data0) {
     GLuint tex0 = upload_texture((uint8_t*)data0, width0, height0, type0);
-    Rect rect = { 0, 0, winW/2, winH };
+    Rect rect = { 0, 0, winW/2.0f, winH/2.0f };
     show(tex0, rect.adjust_ratio({float(width0), float(height0)}), type0);
   }
 
@@ -529,7 +528,7 @@ JS_METHOD(draw2x2Streams) {
   // }
   if (data1) {
     GLuint tex1 = upload_texture((uint8_t*)data1, width1, height1, type1);
-    Rect rect = { winW/2, 0, winW/2, winH };
+    Rect rect = { winW/2.0f, 0, winW/2.0f, winH/2.0f };
     show(tex1, rect.adjust_ratio({float(width1), float(height1)}), type1);
   }
 
@@ -632,7 +631,7 @@ JS_METHOD(CreateWindow) {
       fprintf(stderr, "%s", msg.c_str());
       return ThrowError(msg.c_str());
     }
-    fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
+    // fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
   }
   else
     glfwSetWindowSize(window, width,height);
@@ -669,6 +668,11 @@ JS_METHOD(PushMatrix) {
 JS_METHOD(PopMatrix) {
   glPopMatrix();
 }
+
+JS_METHOD(ClearColorBuffer) {
+  glClear(GL_COLOR_BUFFER_BIT);
+}
+
 
 JS_METHOD(SetWindowTitle) {
   uint64_t handle=info[0]->IntegerValue();
@@ -966,6 +970,7 @@ void init(Handle<Object> target) {
   JS_GLFW_SET_METHOD(Ortho);
   JS_GLFW_SET_METHOD(PushMatrix);
   JS_GLFW_SET_METHOD(PopMatrix);
+  JS_GLFW_SET_METHOD(ClearColorBuffer);
 
   /* Input handling */
   JS_GLFW_SET_METHOD(GetKey);
