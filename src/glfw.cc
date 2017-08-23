@@ -472,6 +472,17 @@ JS_METHOD(draw2x2Streams) {
   int32_t winH = 0;
   glfwGetWindowSize(win, &winW, &winH);
 
+  uint32_t channel_count = info[argIndex++]->Uint32Value();
+  float width_divid_factor = 1.0f;
+  float height_divid_factor = 1.0f;
+  if (channel_count == 2) {
+    width_divid_factor = 2.0f;
+    height_divid_factor = 1.0f;
+  } else if (channel_count > 2) {
+    width_divid_factor = 2.0f;
+    height_divid_factor = 2.0f;
+  }
+
   Nan::TypedArrayContents<uint8_t> buffer0(info[argIndex++].As<Uint8Array>());
   const void* data0 = *buffer0;
   String::Utf8Value str0(info[argIndex++]->ToString());
@@ -512,24 +523,19 @@ JS_METHOD(draw2x2Streams) {
   // }
 
   if (data0) {
-    GLuint tex0 = upload_texture((uint8_t*)data0, width0, height0, type0);
-    Rect rect = { 0, 0, winW/2.0f, winH/2.0f };
-    show(tex0, rect.adjust_ratio({float(width0), float(height0)}), type0);
+    GLuint tex = upload_texture((uint8_t*)data0, width0, height0, type0);
+    Rect rect = { 0, 0, winW/width_divid_factor, winH/height_divid_factor };
+    show(tex, rect.adjust_ratio({float(width0), float(height0)}), type0);
   }
 
   // _ X
   // _ _
   //
   // Display color image as RGB triples
-  // if (data1) {
-  //   glRasterPos2f(0, 1);
-  //   auto format = Str2Format(type1);
-  //   glDrawPixels(width1, height1, format, GL_UNSIGNED_BYTE, data1);
-  // }
   if (data1) {
-    GLuint tex1 = upload_texture((uint8_t*)data1, width1, height1, type1);
-    Rect rect = { winW/2.0f, 0, winW/2.0f, winH/2.0f };
-    show(tex1, rect.adjust_ratio({float(width1), float(height1)}), type1);
+    GLuint tex = upload_texture((uint8_t*)data1, width1, height1, type1);
+    Rect rect = { winW/width_divid_factor, 0, winW/width_divid_factor, winH/height_divid_factor };
+    show(tex, rect.adjust_ratio({float(width1), float(height1)}), type1);
   }
 
   // _ _
@@ -537,9 +543,9 @@ JS_METHOD(draw2x2Streams) {
   //
   // Display infrared image by mapping IR intensity to visible luminance
   if (data2) {
-    glRasterPos2f(-1, 0);
-    auto format = Str2Format(type2);
-    glDrawPixels(width2, height2, format, GL_UNSIGNED_BYTE, data2);
+    GLuint tex = upload_texture((uint8_t*)data2, width2, height2, type2);
+    Rect rect = { 0, winH/height_divid_factor, winW/width_divid_factor, winH/height_divid_factor};
+    show(tex, rect.adjust_ratio({float(width2), float(height2)}), type2);
   }
 
   // _ _
@@ -547,9 +553,9 @@ JS_METHOD(draw2x2Streams) {
   //
   // Display second infrared image by mapping IR intensity to visible luminance
   if (data3) {
-    glRasterPos2f(0, 0);
-    auto format = Str2Format(type3);
-    glDrawPixels(width3, height3, format, GL_UNSIGNED_BYTE, data3);
+    GLuint tex = upload_texture((uint8_t*)data3, width3, height3, type3);
+    Rect rect = { winW/width_divid_factor, winH/height_divid_factor, winW/width_divid_factor, winH/height_divid_factor};
+    show(tex, rect.adjust_ratio({float(width3), float(height3)}), type3);
   }
   SET_RETURN_VALUE(Nan::Undefined());
 }
