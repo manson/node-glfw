@@ -51,7 +51,7 @@
             }
           },
           'libraries': [
-            '<(module_root_dir)/deps/glfw-3.0.4/src/Debug/glfw3dll.lib',
+            '<(module_root_dir)/deps/glfw-3.0.4/src/Release/glfw3dll.lib',
             '-lGlu32.lib',
             'opengl32.lib',
           ],
@@ -73,7 +73,7 @@
             [
               {
                 'destination': '<(module_root_dir)/build/Release',
-                'files': ['<(module_root_dir)/deps/glfw-3.0.4/src/Debug/glfw3.dll']
+                'files': ['<(module_root_dir)/deps/glfw-3.0.4/src/Release/glfw3.dll']
               }
             ]
         }]
