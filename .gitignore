@@ -11,3 +11,6 @@ npm-debug.log
 *.tar.gz
 *.zip
 node_modules
+*.vcxproj*
+*.sln
+*generate.stamp*

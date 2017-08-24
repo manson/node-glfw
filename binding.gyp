@@ -44,6 +44,8 @@
         }],
         ['OS=="win"', {
           'libraries': [
+            '<(module_root_dir)/deps/glfw-3.0.4/src/Debug/glfw3dll.lib',
+            '-lGlu32.lib',
             'opengl32.lib',
           ],
           'defines' : [
@@ -53,6 +55,22 @@
           },
         ],
       ],
+    },
+    {
+      "target_name": "copy_dll",
+      "type":"none",
+      "dependencies" : [ "glfw" ],
+      "conditions": [
+        ['OS=="win"', {
+           "copies":
+            [
+              {
+                'destination': '<(module_root_dir)/build/Release',
+                'files': ['<(module_root_dir)/deps/glfw-3.0.4/src/Debug/glfw3.dll']
+              }
+            ]
+        }]
+      ]
     }
   ]
 }

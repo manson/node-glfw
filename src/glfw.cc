@@ -600,7 +600,7 @@ JS_METHOD(DefaultWindowHints) {
   SET_RETURN_VALUE(Nan::Undefined());
 }
 
-JS_METHOD(CreateWindow) {
+JS_METHOD(CreateGLFWWindow) {
   int width       = info[0]->Uint32Value();
   int height      = info[1]->Uint32Value();
   String::Utf8Value str(info[2]->ToString());
@@ -954,7 +954,7 @@ void init(Handle<Object> target) {
   JS_GLFW_SET_METHOD(GetMonitors);
 
   /* Window handling */
-  JS_GLFW_SET_METHOD(CreateWindow);
+  JS_GLFW_SET_METHOD(CreateGLFWWindow);
   JS_GLFW_SET_METHOD(WindowHint);
   JS_GLFW_SET_METHOD(DefaultWindowHints);
   JS_GLFW_SET_METHOD(DestroyWindow);

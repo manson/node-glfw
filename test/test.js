@@ -28,7 +28,7 @@ for(var i=0; i<monitors.length; i++){
 }
 
 var width=640, height=480;
-var window=glfw.CreateWindow(width, height,"Test");
+var window=glfw.CreateGLFWWindow(width, height,"Test");
 
 if (!window) {
   log("Failed to open GLFW window");
