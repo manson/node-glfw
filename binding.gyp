@@ -1,6 +1,7 @@
 {
   'variables': {
     'platform': '<(OS)',
+    'build_arch': '<!(node -p "process.arch")',
   },
   'conditions': [
     # Replace gyp platform with node platform, blech
@@ -43,6 +44,12 @@
           ]
         }],
         ['OS=="win"', {
+          'msvs_settings': {
+            'VCCLCompilerTool': {
+              'WarnAsError': 'false',
+              'DisableSpecificWarnings': ['4273', '4244', '4005'],
+            }
+          },
           'libraries': [
             '<(module_root_dir)/deps/glfw-3.0.4/src/Debug/glfw3dll.lib',
             '-lGlu32.lib',
