@@ -1,1 +1,0 @@
-/usr/bin/cc     CMakeFiles/glfwinfo.dir/glfwinfo.c.o CMakeFiles/glfwinfo.dir/__/deps/getopt.c.o  -o glfwinfo -rdynamic ../src/libglfw.so.3.0 -lGLU -lGL -lm -Wl,-rpath,/home/kenny/devel/tmp/glfw/node_modules/node-glfw-2/deps/glfw-3.0.4/src 
