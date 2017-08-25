@@ -1,4 +1,4 @@
-echo %0 %1 %2
+echo %0 %1 %2 %3
 
 cd %2
 cd deps
@@ -13,13 +13,13 @@ IF /I "%1"=="x64" (
 
 IF errorlevel 1 (
 	echo "GLFW cmake failed"
-	exit 1
+	exit 2
 )
 
-msbuild GLFW.sln /nologo /noconlog /p:Configuration=Release /m:4
+msbuild GLFW.sln /p:Configuration=Release /p:Platform=%3 /m:4
 IF errorlevel 1 (
 	echo "GLFW Visual Stuio build (msbuild) failed"
-	exit 1
+	exit 3
 ) else (
 	echo "Success: GLFW is built"
 	exit 0

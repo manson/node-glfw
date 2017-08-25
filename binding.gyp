@@ -2,6 +2,7 @@
   'variables': {
     'platform': '<(OS)',
     'build_arch': '<!(node -p "process.arch")',
+    'build_win_platform': '<!(node -e "if(process.arch==\'ia32\') {console.log(\'Win32\');} else {console.log(process.arch);}")',
   },
   'conditions': [
     # Replace gyp platform with node platform, blech
@@ -16,7 +17,7 @@
       'conditions': [
         ['OS=="win"', {
           "variables": {
-            "call_build_script": "cmd /c <!(<(module_root_dir)/build.bat <(build_arch) <(module_root_dir))",
+            "call_build_script": "cmd /c <!(<(module_root_dir)/build.bat <(build_arch) <(module_root_dir) <(build_win_platform))",
           },
           'actions': [
             {
@@ -27,7 +28,7 @@
                 '<(module_root_dir)/deps/glfw-3.0.4/src/Release/glfw3.dll',
               ],
               'action': [
-                'cmd /c echo', 'build script result: <(call_build_script)',
+                'cmd /c echo', 'build script result: <(build_win_platform)',
               ],
             },
           ],
