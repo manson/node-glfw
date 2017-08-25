@@ -33,6 +33,20 @@
           ],
         },
         ],
+        ['OS=="linux"', {
+          'actions': [
+            {
+              'action_name': 'action_build_native_glfw',
+              'inputs': [],
+              'outputs': [
+                '<(module_root_dir)/deps/glfw-3.0.4/src/libglfw.so',
+              ],
+              'action': [
+                './build.sh',
+              ],
+            },
+          ],
+        }],
       ],
     },
     {
