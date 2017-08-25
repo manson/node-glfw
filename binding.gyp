@@ -2,7 +2,7 @@
   'variables': {
     'platform': '<(OS)',
     'build_arch': '<!(node -p "process.arch")',
-    'build_win_platform': '<!(node -e "if(process.arch==\'ia32\') {console.log(\'Win32\');} else {console.log(process.arch);}")',
+    'build_win_platform': '<!(node -p "process.arch==\'ia32\'?\'Win32\':process.arch")',
   },
   'conditions': [
     # Replace gyp platform with node platform, blech
@@ -17,7 +17,7 @@
       'conditions': [
         ['OS=="win"', {
           "variables": {
-            "call_build_script": "cmd /c <!(<(module_root_dir)/build.bat <(build_arch) <(module_root_dir) <(build_win_platform))",
+            "call_build_script": "<!(<(module_root_dir)/build.bat <(build_arch) <(module_root_dir) <(build_win_platform))",
           },
           'actions': [
             {
