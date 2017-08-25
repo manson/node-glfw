@@ -10,8 +10,35 @@
   ],
   'targets': [
     {
+      'target_name': 'native_glfw_build',
+      "variables": {
+      },
+      'conditions': [
+        ['OS=="win"', {
+          "variables": {
+            "call_build_script": "cmd /c <!(<(module_root_dir)/build.bat <(build_arch) <(module_root_dir))",
+          },
+          'actions': [
+            {
+              'action_name': 'action_build_native_glfw',
+              'inputs': [],
+              'outputs': [
+                '<(module_root_dir)/deps/glfw-3.0.4/src/Release/glfw3dll.lib',
+                '<(module_root_dir)/deps/glfw-3.0.4/src/Release/glfw3.dll',
+              ],
+              'action': [
+                'cmd /c echo', 'build script result: <(call_build_script)',
+              ],
+            },
+          ],
+        },
+        ],
+      ],
+    },
+    {
       #'target_name': 'glfw-<(platform)-<(target_arch)',
       'target_name': 'glfw',
+      "dependencies" : [ "native_glfw_build" ],
       'defines': [
         'VERSION=0.2.0'
       ],
@@ -48,6 +75,7 @@
             'VCCLCompilerTool': {
               'WarnAsError': 'false',
               'DisableSpecificWarnings': ['4273', '4244', '4005'],
+              'SuppressStartupBanner': 'true',
             }
           },
           'libraries': [
