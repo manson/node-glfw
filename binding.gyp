@@ -1,6 +1,8 @@
 {
   'variables': {
     'platform': '<(OS)',
+    'build_arch': '<!(node -p "process.arch")',
+    'build_win_platform': '<!(node -p "process.arch==\'ia32\'?\'Win32\':process.arch")',
   },
   'conditions': [
     # Replace gyp platform with node platform, blech
@@ -9,8 +11,49 @@
   ],
   'targets': [
     {
+      'target_name': 'native_glfw_build',
+      "variables": {
+      },
+      'conditions': [
+        ['OS=="win"', {
+          "variables": {
+            "call_build_script": "<!(<(module_root_dir)/build.bat <(build_arch) <(module_root_dir) <(build_win_platform))",
+          },
+          'actions': [
+            {
+              'action_name': 'action_build_native_glfw',
+              'inputs': [],
+              'outputs': [
+                '<(module_root_dir)/deps/glfw-3.0.4/src/Release/glfw3dll.lib',
+                '<(module_root_dir)/deps/glfw-3.0.4/src/Release/glfw3.dll',
+              ],
+              'action': [
+                'cmd /c echo', 'build script result: <(build_win_platform)',
+              ],
+            },
+          ],
+        },
+        ],
+        ['OS=="linux"', {
+          'actions': [
+            {
+              'action_name': 'action_build_native_glfw',
+              'inputs': [],
+              'outputs': [
+                '<(module_root_dir)/deps/glfw-3.0.4/src/libglfw.so',
+              ],
+              'action': [
+                './build.sh',
+              ],
+            },
+          ],
+        }],
+      ],
+    },
+    {
       #'target_name': 'glfw-<(platform)-<(target_arch)',
       'target_name': 'glfw',
+      "dependencies" : [ "native_glfw_build" ],
       'defines': [
         'VERSION=0.2.0'
       ],
@@ -43,7 +86,16 @@
           ]
         }],
         ['OS=="win"', {
+          'msvs_settings': {
+            'VCCLCompilerTool': {
+              'WarnAsError': 'false',
+              'DisableSpecificWarnings': ['4273', '4244', '4005'],
+              'SuppressStartupBanner': 'true',
+            }
+          },
           'libraries': [
+            '<(module_root_dir)/deps/glfw-3.0.4/src/Release/glfw3dll.lib',
+            '-lGlu32.lib',
             'opengl32.lib',
           ],
           'defines' : [
@@ -53,6 +105,22 @@
           },
         ],
       ],
+    },
+    {
+      "target_name": "copy_dll",
+      "type":"none",
+      "dependencies" : [ "glfw" ],
+      "conditions": [
+        ['OS=="win"', {
+           "copies":
+            [
+              {
+                'destination': '<(module_root_dir)/build/Release',
+                'files': ['<(module_root_dir)/deps/glfw-3.0.4/src/Release/glfw3.dll']
+              }
+            ]
+        }]
+      ]
     }
   ]
 }
