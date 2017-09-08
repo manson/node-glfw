@@ -148,6 +148,8 @@ struct Rect {
   float y;
   float w;
   float h;
+  Rect(float x_val = 0, float y_val = 0, float w_val = 0, float h_val = 0) :
+      x(x_val), y(y_val), w(w_val), h(h_val) {}
   // Create new rect within original boundaries with give aspect ration
   Rect adjust_ratio(float2 size) const
   {
@@ -246,23 +248,21 @@ JS_METHOD(drawImage2D) {
   glPopMatrix();
 }
 
-static GLenum Str2Format(const std::string& str) {
-  if (str == "z16") {
-    return GL_RGB;
-  } else if (str == "rgb8") {
-    return GL_RGB;
-  } else if (str == "y8") {
-    return GL_LUMINANCE;
-  }
-  return GL_LUMINANCE;
-}
+//static GLenum Str2Format(const std::string& str) {
+//  if (str == "z16") {
+//    return GL_RGB;
+//  } else if (str == "rgb8") {
+//    return GL_RGB;
+//  } else if (str == "y8") {
+//    return GL_LUMINANCE;
+//  }
+//  return GL_LUMINANCE;
+//}
 
 void show(GLuint tex,
-    const Rect& r,
-    std::string& format) {
+    const Rect& r) {
     if (!tex)
         return;
-
     glBindTexture(GL_TEXTURE_2D, tex);
     glEnable(GL_TEXTURE_2D);
     glBegin(GL_QUAD_STRIP);
@@ -525,7 +525,7 @@ JS_METHOD(draw2x2Streams) {
   if (data0) {
     GLuint tex = upload_texture((uint8_t*)data0, width0, height0, type0);
     Rect rect = { 0, 0, winW/width_divid_factor, winH/height_divid_factor };
-    show(tex, rect.adjust_ratio({float(width0), float(height0)}), type0);
+    show(tex, rect.adjust_ratio({float(width0), float(height0)}));
   }
 
   // _ X
@@ -535,7 +535,7 @@ JS_METHOD(draw2x2Streams) {
   if (data1) {
     GLuint tex = upload_texture((uint8_t*)data1, width1, height1, type1);
     Rect rect = { winW/width_divid_factor, 0, winW/width_divid_factor, winH/height_divid_factor };
-    show(tex, rect.adjust_ratio({float(width1), float(height1)}), type1);
+    show(tex, rect.adjust_ratio({float(width1), float(height1)}));
   }
 
   // _ _
@@ -545,7 +545,7 @@ JS_METHOD(draw2x2Streams) {
   if (data2) {
     GLuint tex = upload_texture((uint8_t*)data2, width2, height2, type2);
     Rect rect = { 0, winH/height_divid_factor, winW/width_divid_factor, winH/height_divid_factor};
-    show(tex, rect.adjust_ratio({float(width2), float(height2)}), type2);
+    show(tex, rect.adjust_ratio({float(width2), float(height2)}));
   }
 
   // _ _
@@ -555,7 +555,7 @@ JS_METHOD(draw2x2Streams) {
   if (data3) {
     GLuint tex = upload_texture((uint8_t*)data3, width3, height3, type3);
     Rect rect = { winW/width_divid_factor, winH/height_divid_factor, winW/width_divid_factor, winH/height_divid_factor};
-    show(tex, rect.adjust_ratio({float(width3), float(height3)}), type3);
+    show(tex, rect.adjust_ratio({float(width3), float(height3)}));
   }
   SET_RETURN_VALUE(Nan::Undefined());
 }
@@ -919,6 +919,37 @@ JS_METHOD(ExtensionSupported) {
   SET_RETURN_VALUE(JS_BOOL(glfwExtensionSupported(*str)==1));
 }
 
+JS_METHOD(uploadAsTexture) {
+  size_t argIndex = 0;
+
+  Nan::TypedArrayContents<uint8_t> buffer0(info[argIndex++].As<Uint8Array>());
+  uint8_t* buffer = reinterpret_cast<uint8_t*>(*buffer0);
+
+  uint32_t width = info[argIndex++]->Uint32Value();
+  uint32_t height = info[argIndex++]->Uint32Value();
+  String::Utf8Value str0(info[argIndex++]->ToString());
+  std::string format_str = *str0;
+
+  GLuint tex = 0;
+  if (buffer) {
+    tex = upload_texture(buffer, width, height, format_str);
+    SET_RETURN_VALUE(JS_NUM(tex));
+    return;
+  }
+  SET_RETURN_VALUE(Nan::Undefined());
+}
+
+JS_METHOD(showInRect) {
+  size_t argIndex = 0;
+  GLuint tex =
+      static_cast<GLuint>(info[argIndex++]->IntegerValue());
+  uint32_t x = info[argIndex++]->Uint32Value();
+  uint32_t y = info[argIndex++]->Uint32Value();
+  uint32_t w = info[argIndex++]->Uint32Value();
+  uint32_t h = info[argIndex++]->Uint32Value();
+  show(tex, Rect(x, y, w, h));
+  SET_RETURN_VALUE(Nan::Undefined());
+}
 // make sure we close everything when we exit
 void AtExit() {
   glfwTerminate();
@@ -1276,6 +1307,8 @@ void init(Handle<Object> target) {
   JS_GLFW_SET_METHOD(draw2x2Streams);
   JS_GLFW_SET_METHOD(drawDepthAndColorAsPointCloud);
   JS_GLFW_SET_METHOD(setKeyCallback);
+  JS_GLFW_SET_METHOD(uploadAsTexture);
+  JS_GLFW_SET_METHOD(showInRect);
 }
 
 NODE_MODULE(glfw, init)
