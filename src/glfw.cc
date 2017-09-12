@@ -453,7 +453,7 @@ static void global_key_func(GLFWwindow *, int key,
     int scancode, int action, int mods) {
   if (global_js_key_callback) {
     v8::Local<v8::Value> argv[4] = {
-        Nan::New(key), Nan::New(action), Nan::New(scancode), Nan::New(mods)};
+        Nan::New(key), Nan::New(scancode), Nan::New(action), Nan::New(mods)};
     global_js_key_callback->Call(4, argv);
   }
 }
