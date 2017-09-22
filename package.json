@@ -1,6 +1,6 @@
 {
-    "name": "node-glfw-2",
-    "version": "0.2.3",
+    "name": "node-glfw-3",
+    "version": "0.3.1",
     "description": "A NodeJS wrapper around GLFW",
     "main": "index.js",
     "author": "Mikael Bourges-Sevenier <mikeseven@gmail.com>",
@@ -10,6 +10,16 @@
             "name": "Mikael Bourges-Sevenier",
             "email": "mikeseven@gmail.com",
             "twitter": "msevenier"
+        },
+        "Kenny Yuan <kaining.yuan@intel.com>",
+        {
+            "name": "Kenny Yuan",
+            "email": "kaining.yuan@intel.com"
+        },
+        "Ting Shao <ting.shao@intel.com>",
+        {
+            "name": "Ting Shao",
+            "email": "ting.shao@intel.com"
         }
     ],
     "keywords": [
