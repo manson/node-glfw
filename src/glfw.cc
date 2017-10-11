@@ -168,10 +168,12 @@ struct Rect {
 static void _DrawImage2D(const Rect& r, const std::string& type,
                          const void* data, int width, int height,
                          float alpha = 1.0) {
-  GLuint texture;
+  static GLuint texture = 0;
 
   // Upload
-  glGenTextures(1, &texture);
+  if (!texture) {
+    glGenTextures(1, &texture);
+  }
   glBindTexture(GL_TEXTURE_2D, texture);
 
   if (type == "z16") {
@@ -277,7 +279,8 @@ void show(GLuint tex,
     // draw_text(r.x + 15, r.y + 20, rs2_stream_to_string(stream));
 }
 
-GLuint upload_texture(
+void upload_texture(
+    GLuint texture,
     uint8_t* data,
     uint32_t width,
     uint32_t height,
@@ -285,8 +288,6 @@ GLuint upload_texture(
     static std::vector<uint8_t> rgb;
     // If the frame timestamp has changed
     //  since the last time show (...) was called, re-upload the texture
-    GLuint texture;
-    glGenTextures(1, &texture);
 
     glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -317,7 +318,6 @@ GLuint upload_texture(
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
-    return texture;
 }
 
 static state app_state = {0, 0, 0, 0, false, 0, 0};
@@ -389,9 +389,12 @@ JS_METHOD(drawDepthAndColorAsPointCloud) {
     first = false;
     register_callbacks(win);
   }
-  GLuint tex = 0;
+  static GLuint tex = 0;
+  if (!tex)
+    glGenTextures(1, &tex);
+
   if (color)
-    tex = upload_texture(color, color_width, color_height, color_format_str);
+    upload_texture(tex, color, color_width, color_height, color_format_str);
   glPopMatrix();
   glPushAttrib(GL_ALL_ATTRIB_BITS);
   int32_t winW, winH;
@@ -521,9 +524,12 @@ JS_METHOD(draw2x2Streams) {
   //   auto format = Str2Format(type0);
   //   glDrawPixels(width0, height0, format, GL_UNSIGNED_BYTE, data0);
   // }
+  static GLuint tex = 0;
+  if (!tex)
+    glGenTextures(1, &tex);
 
   if (data0) {
-    GLuint tex = upload_texture((uint8_t*)data0, width0, height0, type0);
+    upload_texture(tex, (uint8_t*)data0, width0, height0, type0);
     Rect rect = { 0, 0, winW/width_divid_factor, winH/height_divid_factor };
     show(tex, rect.adjust_ratio({float(width0), float(height0)}));
   }
@@ -533,7 +539,7 @@ JS_METHOD(draw2x2Streams) {
   //
   // Display color image as RGB triples
   if (data1) {
-    GLuint tex = upload_texture((uint8_t*)data1, width1, height1, type1);
+    upload_texture(tex, (uint8_t*)data1, width1, height1, type1);
     Rect rect = { winW/width_divid_factor, 0, winW/width_divid_factor, winH/height_divid_factor };
     show(tex, rect.adjust_ratio({float(width1), float(height1)}));
   }
@@ -543,7 +549,7 @@ JS_METHOD(draw2x2Streams) {
   //
   // Display infrared image by mapping IR intensity to visible luminance
   if (data2) {
-    GLuint tex = upload_texture((uint8_t*)data2, width2, height2, type2);
+    upload_texture(tex, (uint8_t*)data2, width2, height2, type2);
     Rect rect = { 0, winH/height_divid_factor, winW/width_divid_factor, winH/height_divid_factor};
     show(tex, rect.adjust_ratio({float(width2), float(height2)}));
   }
@@ -553,7 +559,7 @@ JS_METHOD(draw2x2Streams) {
   //
   // Display second infrared image by mapping IR intensity to visible luminance
   if (data3) {
-    GLuint tex = upload_texture((uint8_t*)data3, width3, height3, type3);
+    upload_texture(tex, (uint8_t*)data3, width3, height3, type3);
     Rect rect = { winW/width_divid_factor, winH/height_divid_factor, winW/width_divid_factor, winH/height_divid_factor};
     show(tex, rect.adjust_ratio({float(width3), float(height3)}));
   }
@@ -921,7 +927,8 @@ JS_METHOD(ExtensionSupported) {
 
 JS_METHOD(uploadAsTexture) {
   size_t argIndex = 0;
-
+  GLuint tex =
+      static_cast<GLuint>(info[argIndex++]->IntegerValue());
   Nan::TypedArrayContents<uint8_t> buffer0(info[argIndex++].As<Uint8Array>());
   uint8_t* buffer = reinterpret_cast<uint8_t*>(*buffer0);
 
@@ -930,12 +937,8 @@ JS_METHOD(uploadAsTexture) {
   String::Utf8Value str0(info[argIndex++]->ToString());
   std::string format_str = *str0;
 
-  GLuint tex = 0;
-  if (buffer) {
-    tex = upload_texture(buffer, width, height, format_str);
-    SET_RETURN_VALUE(JS_NUM(tex));
-    return;
-  }
+  if (buffer)
+    upload_texture(tex, buffer, width, height, format_str);
   SET_RETURN_VALUE(Nan::Undefined());
 }
 
@@ -950,6 +953,13 @@ JS_METHOD(showInRect) {
   show(tex, Rect(x, y, w, h));
   SET_RETURN_VALUE(Nan::Undefined());
 }
+
+JS_METHOD(genTexture) {
+  GLuint tex = 0;
+  glGenTextures(1, &tex);
+  SET_RETURN_VALUE(JS_NUM(tex));
+}
+
 // make sure we close everything when we exit
 void AtExit() {
   glfwTerminate();
@@ -1309,6 +1319,7 @@ void init(Handle<Object> target) {
   JS_GLFW_SET_METHOD(setKeyCallback);
   JS_GLFW_SET_METHOD(uploadAsTexture);
   JS_GLFW_SET_METHOD(showInRect);
+  JS_GLFW_SET_METHOD(genTexture);
 }
 
 NODE_MODULE(glfw, init)
