@@ -6,7 +6,7 @@ This projects attempts to provide platform-independent access to windowing syste
 Installation
 ------------
 
-	npm install node-glfw-2
+	npm install node-glfw-3
 
 This Fork
 ------------
