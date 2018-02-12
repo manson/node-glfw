@@ -48,6 +48,20 @@
             },
           ],
         }],
+        ['OS=="mac"', {
+          'actions': [
+            {
+              'action_name': 'action_build_native_glfw',
+              'inputs': [],
+              'outputs': [
+                '<(module_root_dir)/deps/glfw-3.0.4/src/libglfw.dylib',
+              ],
+              'action': [
+                './build.sh',
+              ],
+            },
+          ],
+        }],
       ],
     },
     {
@@ -78,12 +92,9 @@
         }],
         ['OS=="mac"', {
           'libraries': [
-            '<(module_root_dir)/deps/glfw-3.0.4/src/libglfw.so',
+            '<(module_root_dir)/deps/glfw-3.0.4/src/libglfw.dylib',
             '-framework OpenGL',
           ],
-          'ldflags': [
-            '-Wl,-rpath,@loader_path/../../deps/glfw-3.0.4/src',
-          ]
         }],
         ['OS=="win"', {
           'msvs_settings': {
