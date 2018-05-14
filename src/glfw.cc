@@ -227,7 +227,7 @@ JS_METHOD(drawImage2D) {
   const int width = info[2]->Uint32Value();   // Viewport width
   const int height = info[3]->Uint32Value();  // Viewport height
 
-  String::Utf8Value str(info[4]->ToString()); // Buffer type
+  Nan::Utf8String str(info[4]); // Buffer type
   std::string type = *str;
   Nan::TypedArrayContents<uint16_t> buffer(info[5].As<Uint16Array>());
   const void* data = *buffer; // Buffer pointer
@@ -381,7 +381,7 @@ JS_METHOD(drawDepthAndColorAsPointCloud) {
 
   uint32_t color_width = info[argIndex++]->Uint32Value();
   uint32_t color_height = info[argIndex++]->Uint32Value();
-  String::Utf8Value str0(info[argIndex++]->ToString());
+  Nan::Utf8String str0(info[argIndex++]);
   std::string color_format_str = *str0;
 
   static bool first = true;
@@ -457,7 +457,7 @@ static void global_key_func(GLFWwindow *, int key,
   if (global_js_key_callback) {
     v8::Local<v8::Value> argv[4] = {
         Nan::New(key), Nan::New(scancode), Nan::New(action), Nan::New(mods)};
-    global_js_key_callback->Call(4, argv);
+    Nan::Call(*global_js_key_callback, 4, argv);
   }
 }
 
@@ -488,28 +488,28 @@ JS_METHOD(draw2x2Streams) {
 
   Nan::TypedArrayContents<uint8_t> buffer0(info[argIndex++].As<Uint8Array>());
   const void* data0 = *buffer0;
-  String::Utf8Value str0(info[argIndex++]->ToString());
+  Nan::Utf8String str0(info[argIndex++]);
   std::string type0 = *str0;
   uint32_t width0 = info[argIndex++]->Uint32Value();
   uint32_t height0 = info[argIndex++]->Uint32Value();
 
   Nan::TypedArrayContents<uint8_t> buffer1(info[argIndex++].As<Uint8Array>());
   const void* data1 = *buffer1;
-  String::Utf8Value str1(info[argIndex++]->ToString());
+  Nan::Utf8String str1(info[argIndex++]);
   std::string type1 = *str1;
   uint32_t width1 = info[argIndex++]->Uint32Value();
   uint32_t height1 = info[argIndex++]->Uint32Value();
 
   Nan::TypedArrayContents<uint8_t> buffer2(info[argIndex++].As<Uint8Array>());
   const void* data2 = *buffer2;
-  String::Utf8Value str2(info[argIndex++]->ToString());
+  Nan::Utf8String str2(info[argIndex++]);
   std::string type2 = *str2;
   uint32_t width2 = info[argIndex++]->Uint32Value();
   uint32_t height2 = info[argIndex++]->Uint32Value();
 
   Nan::TypedArrayContents<uint8_t> buffer3(info[argIndex++].As<Uint8Array>());
   const void* data3 = *buffer3;
-  String::Utf8Value str3(info[argIndex++]->ToString());
+  Nan::Utf8String str3(info[argIndex++]);
   std::string type3 = *str3;
   uint32_t width3 = info[argIndex++]->Uint32Value();
   uint32_t height3 = info[argIndex++]->Uint32Value();
@@ -609,7 +609,7 @@ JS_METHOD(DefaultWindowHints) {
 JS_METHOD(CreateGLFWWindow) {
   int width       = info[0]->Uint32Value();
   int height      = info[1]->Uint32Value();
-  String::Utf8Value str(info[2]->ToString());
+  Nan::Utf8String str(info[2]);
   int monitor_idx = info[3]->Uint32Value();
   
   GLFWwindow* window = NULL;
@@ -688,7 +688,7 @@ JS_METHOD(ClearColorBuffer) {
 
 JS_METHOD(SetWindowTitle) {
   uint64_t handle=info[0]->IntegerValue();
-  String::Utf8Value str(info[1]->ToString());
+  Nan::Utf8String str(info[1]);
   if(handle) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     glfwSetWindowTitle(window, *str);
@@ -921,7 +921,7 @@ JS_METHOD(SwapInterval) {
 }
 
 JS_METHOD(ExtensionSupported) {
-  String::Utf8Value str(info[0]);
+  Nan::Utf8String str(info[0]);
   SET_RETURN_VALUE(JS_BOOL(glfwExtensionSupported(*str)==1));
 }
 
@@ -934,7 +934,7 @@ JS_METHOD(uploadAsTexture) {
 
   uint32_t width = info[argIndex++]->Uint32Value();
   uint32_t height = info[argIndex++]->Uint32Value();
-  String::Utf8Value str0(info[argIndex++]->ToString());
+  Nan::Utf8String str0(info[argIndex++]);
   std::string format_str = *str0;
 
   if (buffer)
