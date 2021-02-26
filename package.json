@@ -40,7 +40,7 @@
         "url": "http://github.com/kenny-y/node-glfw"
     },
     "engines": {
-        "node": "0.6.5-0.14.16"
+        "node": "0.6.5-14.16.0"
     },
     "scripts": {},
     "dependencies": {
